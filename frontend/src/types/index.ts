@@ -41,7 +41,7 @@ export interface ChatMessage {
   type: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  bill?: BillCreate; // 如果是AI解析出的账单信息
+  bills?: BillCreate[]; // 如果是AI解析出的账单信息
 }
 
 // 数据库聊天消息类型
@@ -70,7 +70,7 @@ export interface AIAnalysisRequest {
 
 export interface AIAnalysisResponse {
   message: string;
-  bill?: BillCreate;
+  bills?: BillCreate[];
   confidence: number;
 }
 

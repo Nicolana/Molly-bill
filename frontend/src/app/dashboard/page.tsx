@@ -28,6 +28,19 @@ export default function DashboardPage() {
     }
   };
 
+  // 处理多账单创建
+  const handleBillsCreated = async (billsData: BillCreate[]) => {
+    try {
+      for (const billData of billsData) {
+        const response = await billsAPI.createBill(billData);
+        console.log('账单创建成功:', response.data);
+      }
+      // 可以在这里添加成功提示
+    } catch (error) {
+      console.error('创建账单失败:', error);
+    }
+  };
+
   // 处理登出
   const handleLogout = () => {
     logout();
@@ -84,7 +97,7 @@ export default function DashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-[calc(100%-80px)] p-0">
-                <ChatInterface onBillCreated={handleBillCreated} />
+                <ChatInterface onBillCreated={handleBillCreated} onBillsCreated={handleBillsCreated} />
               </CardContent>
             </Card>
           </TabsContent>

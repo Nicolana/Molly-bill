@@ -324,10 +324,11 @@ async def chat(request: ChatRequest, current_user: User = Depends(get_current_us
         result = ai_service.chat(request.message)
         
         # 如果有账单信息，创建账单
-        bill_id = None
-        if result.get("bill"):
-            bill = create_bill(db=db, bill=result["bill"], user_id=current_user.id)
-            bill_id = bill.id
+        bill_ids = []
+        if result.get("bills"):
+            for bill_data in result["bills"]:
+                bill = create_bill(db=db, bill=bill_data, user_id=current_user.id)
+                bill_ids.append(bill.id)
         
         # 保存AI回复
         ai_message = create_chat_message(
@@ -336,15 +337,15 @@ async def chat(request: ChatRequest, current_user: User = Depends(get_current_us
                 content=result.get("message", ""),
                 message_type="assistant",
                 input_type="text",
-                ai_confidence=0.9 if result.get("bill") else 0.0
+                ai_confidence=0.9 if result.get("bills") else 0.0
             ),
             user_id=current_user.id,
-            bill_id=bill_id
+            bill_id=bill_ids[0] if bill_ids else None
         )
         
         return ChatResponse(
             message=result.get("message", ""),
-            bill=result.get("bill")
+            bills=result.get("bills", [])
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"聊天失败: {str(e)}") 

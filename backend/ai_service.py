@@ -19,24 +19,53 @@ class AIService:
     def analyze_text(self, text: str) -> Dict[str, Any]:
         """分析文本中的账单信息"""
         prompt = f"""
-        请分析以下文本中的账单信息，提取金额、描述、分类等信息。
-        如果包含账单信息，请以JSON格式返回，格式如下：
+        你是一个专业的记账助手。请仔细分析以下文本中的消费信息，提取金额、描述、分类等信息。
+
+        账单识别规则：
+        1. 任何提到花钱、消费、购买、花费等词汇的内容都可能是账单
+        2. 金额可以是数字+单位（如：18块、13元、35.5元等）
+        3. 描述应该简洁明了，如"午餐"、"咖啡"、"打车"等
+        4. 分类可以是：餐饮、交通、购物、娱乐、其他等
+        5. 如果文本中有多个消费项目，请识别所有提到的消费项目
+
+        如果文本包含消费信息，请以JSON格式返回：
         {{
             "has_bill": true,
-            "bill": {{
-                "amount": 金额,
-                "description": "描述",
-                "category": "分类"
-            }},
-            "message": "回复消息"
+            "bills": [
+                {{
+                    "amount": 金额（数字）,
+                    "description": "消费描述",
+                    "category": "分类"
+                }}
+            ],
+            "message": "已识别到{账单数量}笔消费信息"
         }}
-        
-        如果没有账单信息，返回：
+
+        如果没有消费信息，返回：
         {{
             "has_bill": false,
-            "message": "回复消息"
+            "message": "我没有识别到消费信息，请告诉我您花了多少钱，在什么地方消费的。"
         }}
-        
+
+        示例：
+        输入："午餐花了18块，喝咖啡花了13块"
+        输出：{{
+            "has_bill": true,
+            "bills": [
+                {{
+                    "amount": 18,
+                    "description": "午餐",
+                    "category": "餐饮"
+                }},
+                {{
+                    "amount": 13,
+                    "description": "咖啡",
+                    "category": "餐饮"
+                }}
+            ],
+            "message": "已识别到2笔消费信息：午餐 ¥18，咖啡 ¥13"
+        }}
+
         文本内容：{text}
         """
         
@@ -185,10 +214,10 @@ class AIService:
         analysis = self.analyze_text(message)
         
         if analysis.get("has_bill", False):
-            bill = analysis.get("bill")
+            bills = analysis.get("bills", [])
             return {
                 "message": analysis.get("message", "已识别到账单信息"),
-                "bill": bill
+                "bills": bills
             }
         else:
             # 如果没有账单信息，进行一般性对话
@@ -210,18 +239,18 @@ class AIService:
                     content = response.output.choices[0].message.content
                     return {
                         "message": content,
-                        "bill": None
+                        "bills": []
                     }
                 else:
                     return {
                         "message": "抱歉，我现在无法回复，请稍后再试。",
-                        "bill": None
+                        "bills": []
                     }
             except Exception as e:
                 print(f"聊天错误: {e}")
                 return {
                     "message": "抱歉，AI服务暂时不可用，请稍后再试。",
-                    "bill": None
+                    "bills": []
                 }
 
 # 创建全局AI服务实例

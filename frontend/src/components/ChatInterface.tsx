@@ -10,9 +10,10 @@ import { Mic, MicOff, Camera, Send, Loader2, Trash2 } from 'lucide-react';
 
 interface ChatInterfaceProps {
   onBillCreated?: (bill: BillCreate) => void;
+  onBillsCreated?: (bills: BillCreate[]) => void;
 }
 
-export default function ChatInterface({ onBillCreated }: ChatInterfaceProps) {
+export default function ChatInterface({ onBillCreated, onBillsCreated }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -60,13 +61,13 @@ export default function ChatInterface({ onBillCreated }: ChatInterfaceProps) {
   }, [messages]);
 
   // 添加消息到聊天（本地状态）
-  const addMessage = (content: string, type: 'user' | 'assistant', bill?: BillCreate) => {
+  const addMessage = (content: string, type: 'user' | 'assistant', bills?: BillCreate[]) => {
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
       type,
       content,
       timestamp: new Date(),
-      bill,
+      bills,
     };
     setMessages(prev => [...prev, newMessage]);
   };
@@ -84,14 +85,19 @@ export default function ChatInterface({ onBillCreated }: ChatInterfaceProps) {
 
     try {
       const response = await aiAPI.chat(userMessage);
-      const { message, bill } = response.data;
+      const { message, bills } = response.data;
 
       // 添加AI回复到本地状态
-      addMessage(message, 'assistant', bill);
+      addMessage(message, 'assistant', bills);
 
       // 如果有账单信息，通知父组件
-      if (bill && onBillCreated) {
-        onBillCreated(bill);
+      if (bills && bills.length > 0) {
+        if (onBillsCreated) {
+          onBillsCreated(bills);
+        } else if (onBillCreated) {
+          // 向后兼容：如果只有onBillCreated回调，只处理第一个账单
+          onBillCreated(bills[0]);
+        }
       }
     } catch (error) {
       console.error('发送消息失败:', error);
@@ -151,11 +157,15 @@ export default function ChatInterface({ onBillCreated }: ChatInterfaceProps) {
         addMessage(`语音输入: ${text}`, 'user');
         // 继续处理文本
         const aiResponse = await aiAPI.chat(text);
-        const { message, bill } = aiResponse.data;
-        addMessage(message, 'assistant', bill);
+        const { message, bills } = aiResponse.data;
+        addMessage(message, 'assistant', bills);
         
-        if (bill && onBillCreated) {
-          onBillCreated(bill);
+        if (bills && bills.length > 0) {
+          if (onBillsCreated) {
+            onBillsCreated(bills);
+          } else if (onBillCreated) {
+            onBillCreated(bills[0]);
+          }
         }
       } else {
         addMessage('抱歉，我没有听清楚，请再说一遍。', 'assistant');
@@ -275,11 +285,15 @@ export default function ChatInterface({ onBillCreated }: ChatInterfaceProps) {
                 }`}>
                   <CardContent className="p-3">
                     <p className="text-sm">{message.content}</p>
-                    {message.bill && (
+                    {message.bills && message.bills.length > 0 && (
                       <div className="mt-2 p-2 bg-white bg-opacity-20 rounded text-xs">
-                        <p>识别到账单: ¥{message.bill.amount}</p>
-                        {message.bill.description && <p>描述: {message.bill.description}</p>}
-                        {message.bill.category && <p>分类: {message.bill.category}</p>}
+                        {message.bills.map((bill, index) => (
+                          <div key={index} className="mb-1">
+                            <p>识别到账单: ¥{bill.amount}</p>
+                            {bill.description && <p>描述: {bill.description}</p>}
+                            {bill.category && <p>分类: {bill.category}</p>}
+                          </div>
+                        ))}
                       </div>
                     )}
                     <p className="text-xs opacity-70 mt-1">

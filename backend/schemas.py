@@ -93,4 +93,4 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     message: str
-    bill: Optional[BillCreate] = None 
+    bills: Optional[List[BillCreate]] = None 
