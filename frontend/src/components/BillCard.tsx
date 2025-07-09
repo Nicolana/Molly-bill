@@ -52,13 +52,13 @@ const categoryIcons: Record<string, React.ComponentType<any>> = {
 
 export default function BillCard({ bill, index }: BillCardProps) {
   const IconComponent = categoryIcons[bill.category || '其他'] || DollarSign;
-
+  console.log(bill);
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow py-0">
       <CardContent className="p-4 min-w-[300px]">
         {/* 顶部区域 */}
         <div className="flex items-center justify-between mb-3">
-          <div className="text-xs text-gray-500">已记录：费用</div>
+          <div className="text-xs text-gray-500">已记录：{bill.type === 'expense' ? '支出' : '收入'}</div>
           <div className="text-xs text-gray-400">
             {bill.date ? dayjs(bill.date).locale('zh-cn').format('MM-DD dddd') : '刚刚'}
           </div>

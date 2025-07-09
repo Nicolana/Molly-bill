@@ -16,6 +16,7 @@ export interface Bill {
 export interface BillCreate {
   amount: number;
   category?: string;
+  type: 'expense' | 'income';
   description?: string;
   date?: string;
 }

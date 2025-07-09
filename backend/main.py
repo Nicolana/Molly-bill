@@ -168,6 +168,7 @@ async def get_recent_messages(
                 "amount": message.bill.amount,
                 "category": message.bill.category,
                 "description": message.bill.description,
+                "type": message.bill.type.value,
                 "date": message.bill.date.isoformat() if message.bill.date else None
             }
             bills.append(bill_data)
