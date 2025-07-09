@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MessageSquare, BarChart3, Calendar, TrendingUp } from 'lucide-react';
-import { Bill } from '@/types';
+import { Bill, BillCreate } from '@/types';
 import { billsAPI } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ChatInterface from '@/components/ChatInterface';
+import CalendarView from '@/components/CalendarView';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { format, subDays, startOfDay, endOfDay, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -49,6 +50,17 @@ export default function DashboardPage() {
       console.error('删除账单失败:', err);
       alert('删除账单失败');
     }
+  };
+
+  // 处理新账单创建
+  const handleBillsCreated = async (newBills: BillCreate[]) => {
+    // 重新获取账单数据以更新图表和列表
+    await fetchBills();
+  };
+
+  // 处理日期选择
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
   };
 
   useEffect(() => {
@@ -142,7 +154,7 @@ export default function DashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-[calc(100%-80px)] p-0">
-                <ChatInterface />
+                <ChatInterface onBillsCreated={handleBillsCreated} />
               </CardContent>
             </Card>
           </div>
@@ -182,7 +194,7 @@ export default function DashboardPage() {
 
               {/* 图表和账单列表标签页 */}
               <Tabs defaultValue="chart" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="chart" className="flex items-center space-x-2">
                     <TrendingUp className="h-4 w-4" />
                     <span>趋势图</span>
@@ -190,6 +202,10 @@ export default function DashboardPage() {
                   <TabsTrigger value="category" className="flex items-center space-x-2">
                     <BarChart3 className="h-4 w-4" />
                     <span>分类统计</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="calendar" className="flex items-center space-x-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>日历视图</span>
                   </TabsTrigger>
                   <TabsTrigger value="bills" className="flex items-center space-x-2">
                     <Calendar className="h-4 w-4" />
@@ -272,6 +288,14 @@ export default function DashboardPage() {
                       </div>
                     </CardContent>
                   </Card>
+                </TabsContent>
+
+                <TabsContent value="calendar" className="space-y-4">
+                  <CalendarView 
+                    bills={bills}
+                    selectedDate={selectedDate}
+                    onDateSelect={handleDateSelect}
+                  />
                 </TabsContent>
 
                 <TabsContent value="bills" className="space-y-4">

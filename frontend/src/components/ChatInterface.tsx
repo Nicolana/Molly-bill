@@ -7,9 +7,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ChatMessage, BillCreate } from '@/types';
 import { aiAPI, chatAPI } from '@/lib/api';
 import { Mic, MicOff, Camera, Send, Loader2, Trash2 } from 'lucide-react';
+import BillCard from './BillCard';
 
 
-export default function ChatInterface() {
+interface ChatInterfaceProps {
+  onBillsCreated?: (bills: BillCreate[]) => void;
+}
+
+export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -95,6 +100,11 @@ export default function ChatInterface() {
       bills,
     };
     setMessages(prev => [...prev, newMessage]);
+    
+    // 如果有新账单创建，通知父组件
+    if (bills && bills.length > 0 && onBillsCreated) {
+      onBillsCreated(bills);
+    }
   };
 
   // 发送文本消息
@@ -156,7 +166,7 @@ export default function ChatInterface() {
       setIsRecording(true);
     } catch (error) {
       console.error('无法访问麦克风:', error);
-      alert('无法访问麦克风，请检查权限设置。');
+      alert('无法访问麦克风，请检查权限设置。请确保已授予麦克风权限。');
     }
   };
 
@@ -309,13 +319,9 @@ export default function ChatInterface() {
                   <CardContent className="p-3">
                     <p className="text-sm">{message.content}</p>
                     {message.bills && message.bills.length > 0 && (
-                      <div className="mt-2 p-2 bg-white bg-opacity-20 rounded text-xs">
+                      <div className="mt-3 space-y-2">
                         {message.bills.map((bill: BillCreate, index) => (
-                          <div key={index} className="mb-1">
-                            <p>识别到账单: ¥{bill.amount}</p>
-                            {bill.description && <p>描述: {bill.description}</p>}
-                            {bill.category && <p>分类: {bill.category}</p>}
-                          </div>
+                          <BillCard key={index} bill={bill} index={index} />
                         ))}
                       </div>
                     )}
