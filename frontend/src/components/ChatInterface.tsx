@@ -8,6 +8,8 @@ import { ChatMessage, BillCreate } from '@/types';
 import { aiAPI, chatAPI } from '@/lib/api';
 import { Mic, MicOff, Camera, Send, Loader2, Trash2 } from 'lucide-react';
 import BillCard from './BillCard';
+import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
 
 
 interface ChatInterfaceProps {
@@ -326,7 +328,7 @@ export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
                       </div>
                     )}
                     <p className="text-xs opacity-70 mt-1">
-                      {message.timestamp.toLocaleTimeString()}
+                      {dayjs(message.timestamp).locale('zh-cn').format('YYYY-MM-DD HH:mm:ss')}
                     </p>
                   </CardContent>
                   

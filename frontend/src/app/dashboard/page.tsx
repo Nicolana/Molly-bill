@@ -11,8 +11,8 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import ChatInterface from '@/components/ChatInterface';
 import CalendarView from '@/components/CalendarView';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { format, subDays, startOfDay, endOfDay, parseISO } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
 
 export default function DashboardPage() {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -85,19 +85,19 @@ export default function DashboardPage() {
     const data = [];
     
     for (let i = days - 1; i >= 0; i--) {
-      const date = subDays(new Date(), i);
-      const dayStart = startOfDay(date);
-      const dayEnd = endOfDay(date);
+      const date = dayjs().subtract(i, 'day');
+      const dayStart = date.startOf('day');
+      const dayEnd = date.endOf('day');
       
       const dayBills = bills.filter(bill => {
-        const billDate = parseISO(bill.date);
-        return billDate >= dayStart && billDate <= dayEnd;
+        const billDate = dayjs(bill.date);
+        return billDate.isSame(dayStart, 'day') || (billDate.isAfter(dayStart) && billDate.isBefore(dayEnd));
       });
       
       const dayTotal = dayBills.reduce((sum, bill) => sum + bill.amount, 0);
       
       data.push({
-        date: format(date, 'MM/dd'),
+        date: date.format('MM/DD'),
         amount: dayTotal,
         count: dayBills.length
       });
@@ -116,12 +116,12 @@ export default function DashboardPage() {
 
   // 获取选中日期的账单
   const getSelectedDateBills = () => {
-    const dayStart = startOfDay(selectedDate);
-    const dayEnd = endOfDay(selectedDate);
+    const dayStart = dayjs(selectedDate).startOf('day');
+    const dayEnd = dayjs(selectedDate).endOf('day');
     
     return bills.filter(bill => {
-      const billDate = parseISO(bill.date);
-      return billDate >= dayStart && billDate <= dayEnd;
+      const billDate = dayjs(bill.date);
+      return billDate.isSame(dayStart, 'day') || (billDate.isAfter(dayStart) && billDate.isBefore(dayEnd));
     });
   };
 
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                         <div className="flex items-center space-x-4">
                           <input
                             type="date"
-                            value={format(selectedDate, 'yyyy-MM-dd')}
+                            value={dayjs(selectedDate).format('YYYY-MM-DD')}
                             onChange={(e) => setSelectedDate(new Date(e.target.value))}
                             className="px-3 py-1 border rounded-md text-sm"
                           />
@@ -341,7 +341,7 @@ export default function DashboardPage() {
                                   <p className="text-sm text-gray-600 mt-1">{bill.description}</p>
                                 )}
                                 <p className="text-xs text-gray-400 mt-1">
-                                  {format(parseISO(bill.date), 'HH:mm')}
+                                  {dayjs(bill.date).format('HH:mm')}
                                 </p>
                               </div>
                               <Button
