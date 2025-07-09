@@ -50,6 +50,10 @@ class Bill(BillBase):
         from_attributes = True
 
 # 认证相关模型
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
 class Token(BaseModel):
     access_token: str
     token_type: str

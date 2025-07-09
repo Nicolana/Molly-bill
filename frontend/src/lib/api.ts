@@ -65,18 +65,12 @@ api.interceptors.response.use(
 export const authAPI = {
   register: (data: RegisterForm) => api.post<BaseResponse<User>>('/register', data),
   login: (data: LoginForm) => {
-    // 将JSON数据转换为表单数据格式
-    const formData = new URLSearchParams();
-    formData.append('username', data.email); // OAuth2PasswordRequestForm期望username字段
-    formData.append('password', data.password);
-    
-    console.log('登录请求数据:', formData.toString());
-    
-    return api.post<BaseResponse<AuthResponse>>('/token', formData, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
+    // 直接以JSON格式发送数据
+    const payload = {
+      email: data.email,
+      password: data.password,
+    };
+    return api.post<BaseResponse<AuthResponse>>('/token', payload);
   },
   getMe: () => api.get<BaseResponse<User>>('/me'),
 };

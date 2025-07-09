@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import timedelta, datetime
@@ -11,7 +10,7 @@ from schemas import (
     User, UserCreate, Bill, BillCreate, Token, BaseResponse, PaginatedResponse,
     AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionRequest, VoiceRecognitionResponse, 
     ImageAnalysisRequest, ImageAnalysisResponse, ChatRequest, ChatResponse, 
-    ChatMessage, ChatHistoryResponse, ChatMessageCreate
+    ChatMessage, ChatHistoryResponse, ChatMessageCreate, LoginRequest
 )
 from crud import create_user, get_user_by_email, verify_password, get_bills, create_bill, delete_bill, create_chat_message, get_chat_messages, get_chat_messages_count, get_recent_chat_messages, delete_chat_message
 from deps import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES, get_db
@@ -48,9 +47,9 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     return success_response(data=created_user, message="注册成功")
 
 @app.post("/token", response_model=BaseResponse)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = get_user_by_email(db, email=form_data.username)
-    if not user or not verify_password(form_data.password, user.hashed_password):
+async def login_for_access_token(login_data: LoginRequest, db: Session = Depends(get_db)):
+    user = get_user_by_email(db, email=login_data.email)
+    if not user or not verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="邮箱或密码错误",

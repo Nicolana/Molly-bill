@@ -93,6 +93,9 @@ export default function LoginPage() {
       
       const { access_token } = authData;
       console.log('获取到的token:', access_token);
+
+      // 先存储token到localStorage，这样后续的API调用就能带上Authorization头
+      localStorage.setItem('token', access_token);
       
       // 获取用户信息
       console.log('获取用户信息...');
@@ -118,7 +121,7 @@ export default function LoginPage() {
         throw new Error('用户信息不完整');
       }
       
-      // 执行登录
+      // 执行登录（更新状态管理）
       login(access_token, userData);
       console.log('登录成功，用户信息:', userData);
       
