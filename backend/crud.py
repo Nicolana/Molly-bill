@@ -30,6 +30,10 @@ def create_user(db: Session, user: UserCreate):
 def get_bills(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     return db.query(Bill).filter(Bill.owner_id == user_id).offset(skip).limit(limit).all()
 
+def get_bills_count(db: Session, user_id: int):
+    """获取用户账单总数"""
+    return db.query(Bill).filter(Bill.owner_id == user_id).count()
+
 def create_bill(db: Session, bill: BillCreate, user_id: int):
     db_bill = Bill(**bill.dict(), owner_id=user_id)
     db.add(db_bill)

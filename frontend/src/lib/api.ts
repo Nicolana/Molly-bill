@@ -2,14 +2,14 @@ import axios, { AxiosError } from 'axios';
 import { User, Bill, BillCreate, AuthResponse, LoginForm, RegisterForm, AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionResult, ImageAnalysisResult, DBChatMessage, ChatHistoryResponse } from '@/types';
 
 // 统一响应格式接口
-interface BaseResponse<T = any> {
+interface BaseResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
   error_code?: string;
 }
 
-interface PaginatedResponse<T = any> {
+interface PaginatedResponse<T = unknown> {
   success: boolean;
   message: string;
   data: T[];
@@ -77,7 +77,9 @@ export const authAPI = {
 
 // 账单相关API
 export const billsAPI = {
-  getBills: () => api.get<PaginatedResponse<Bill>>('/bills/'),
+  getBills: (skip?: number, limit?: number) => api.get<BaseResponse<PaginatedResponse<Bill>>>('/bills/', {
+    params: { skip, limit }
+  }),
   createBill: (data: BillCreate) => api.post<BaseResponse<Bill>>('/bills/', data),
   deleteBill: (id: number) => api.delete<BaseResponse>(`/bills/${id}`),
 };

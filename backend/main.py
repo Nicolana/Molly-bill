@@ -12,7 +12,7 @@ from schemas import (
     ImageAnalysisRequest, ImageAnalysisResponse, ChatRequest, ChatResponse, 
     ChatMessage, ChatHistoryResponse, ChatMessageCreate, LoginRequest
 )
-from crud import create_user, get_user_by_email, verify_password, get_bills, create_bill, delete_bill, create_chat_message, get_chat_messages, get_chat_messages_count, get_recent_chat_messages, delete_chat_message
+from crud import create_user, get_user_by_email, verify_password, get_bills, get_bills_count, create_bill, delete_bill, create_chat_message, get_chat_messages, get_chat_messages_count, get_recent_chat_messages, delete_chat_message
 from deps import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES, get_db
 from ai_service import ai_service
 from utils import success_response, error_response, paginated_response
@@ -65,17 +65,40 @@ async def login_for_access_token(login_data: LoginRequest, db: Session = Depends
         message="登录成功"
     )
 
-@app.get("/bills/", response_model=PaginatedResponse)
+@app.get("/bills/", response_model=BaseResponse)
 async def read_bills(skip: int = 0, limit: int = 100, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     bills = get_bills(db, user_id=current_user.id, skip=skip, limit=limit)
-    # 这里可以添加获取总数的逻辑
-    total = len(bills)  # 简化处理，实际应该查询总数
-    return paginated_response(bills, total, skip, limit, "获取账单列表成功")
+    # 将SQLAlchemy模型转换为Pydantic模型
+    bill_schemas = []
+    for bill in bills:
+        bill_schema = Bill(
+            id=bill.id,
+            amount=bill.amount,
+            category=bill.category,
+            description=bill.description,
+            date=bill.date,
+            owner_id=bill.owner_id
+        )
+        bill_schemas.append(bill_schema)
+    
+    # 获取总数
+    total = get_bills_count(db, user_id=current_user.id)
+    paginated_data = paginated_response(bill_schemas, total, skip, limit, "获取账单列表成功")
+    return success_response(data=paginated_data, message="获取账单列表成功")
 
 @app.post("/bills/", response_model=BaseResponse)
 async def create_user_bill(bill: BillCreate, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     created_bill = create_bill(db=db, bill=bill, user_id=current_user.id)
-    return success_response(data=created_bill, message="账单创建成功")
+    # 将SQLAlchemy模型转换为Pydantic模型
+    bill_schema = Bill(
+        id=created_bill.id,
+        amount=created_bill.amount,
+        category=created_bill.category,
+        description=created_bill.description,
+        date=created_bill.date,
+        owner_id=created_bill.owner_id
+    )
+    return success_response(data=bill_schema, message="账单创建成功")
 
 @app.delete("/bills/{bill_id}", response_model=BaseResponse)
 async def delete_user_bill(bill_id: int, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
