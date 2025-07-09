@@ -315,13 +315,13 @@ export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
                   <Card className={`max-w-xs lg:max-w-md relative py-0 ${
                     message.type === 'user' 
                       ? 'bg-blue-500 text-white' 
-                      : 'bg-gray-100'
+                      : 'bg-white shadow-sm hover:shadow-md transition-shadow py-0'
                   }`}>
                     <CardContent className="p-3">
                       <p className="text-sm">{message.content}</p>
-                      <p className="text-xs opacity-70 mt-1">
+                      {/* <p className="text-xs opacity-70 mt-1">
                         {dayjs(message.timestamp).locale('zh-cn').format('YYYY-MM-DD HH:mm:ss')}
-                      </p>
+                      </p> */}
                     </CardContent>
                     
                     {/* 删除按钮 */}

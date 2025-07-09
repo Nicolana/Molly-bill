@@ -60,7 +60,7 @@ export default function BillCard({ bill, index }: BillCardProps) {
         <div className="flex items-center justify-between mb-3">
           <div className="text-xs text-gray-500">已记录：费用</div>
           <div className="text-xs text-gray-400">
-            {bill.date ? dayjs(bill.date).format('MM-DD HH:mm') : '刚刚'}
+            {bill.date ? dayjs(bill.date).locale('zh-cn').format('MM-DD dddd') : '刚刚'}
           </div>
         </div>
         
