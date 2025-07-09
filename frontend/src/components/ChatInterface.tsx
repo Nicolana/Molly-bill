@@ -8,12 +8,8 @@ import { ChatMessage, BillCreate } from '@/types';
 import { aiAPI, chatAPI } from '@/lib/api';
 import { Mic, MicOff, Camera, Send, Loader2, Trash2 } from 'lucide-react';
 
-interface ChatInterfaceProps {
-  onBillCreated?: (bill: BillCreate) => void;
-  onBillsCreated?: (bills: BillCreate[]) => void;
-}
 
-export default function ChatInterface({ onBillCreated, onBillsCreated }: ChatInterfaceProps) {
+export default function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -85,20 +81,12 @@ export default function ChatInterface({ onBillCreated, onBillsCreated }: ChatInt
 
     try {
       const response = await aiAPI.chat(userMessage);
+      console.log(response.data);
       const { message, bills } = response.data;
+      console.log(bills);
 
       // 添加AI回复到本地状态
       addMessage(message, 'assistant', bills);
-
-      // 如果有账单信息，通知父组件
-      if (bills && bills.length > 0) {
-        if (onBillsCreated) {
-          onBillsCreated(bills);
-        } else if (onBillCreated) {
-          // 向后兼容：如果只有onBillCreated回调，只处理第一个账单
-          onBillCreated(bills[0]);
-        }
-      }
     } catch (error) {
       console.error('发送消息失败:', error);
       addMessage('抱歉，我遇到了一些问题，请稍后再试。', 'assistant');
@@ -159,14 +147,6 @@ export default function ChatInterface({ onBillCreated, onBillsCreated }: ChatInt
         const aiResponse = await aiAPI.chat(text);
         const { message, bills } = aiResponse.data;
         addMessage(message, 'assistant', bills);
-        
-        if (bills && bills.length > 0) {
-          if (onBillsCreated) {
-            onBillsCreated(bills);
-          } else if (onBillCreated) {
-            onBillCreated(bills[0]);
-          }
-        }
       } else {
         addMessage('抱歉，我没有听清楚，请再说一遍。', 'assistant');
       }
@@ -205,13 +185,6 @@ export default function ChatInterface({ onBillCreated, onBillsCreated }: ChatInt
           `- ${bill.description || '未知项目'}: ¥${bill.amount}`
         ).join('\n')}`;
         addMessage(message, 'assistant');
-        
-        // 通知父组件创建账单
-        bills.forEach(bill => {
-          if (onBillCreated) {
-            onBillCreated(bill);
-          }
-        });
       } else {
         addMessage('抱歉，我没有从图片中识别出账单信息。', 'assistant');
       }

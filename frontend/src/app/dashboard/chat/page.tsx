@@ -4,34 +4,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare } from 'lucide-react';
 import ChatInterface from '@/components/ChatInterface';
-import { BillCreate } from '@/types';
-import { billsAPI } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function ChatPage() {
-  // 处理账单创建
-  const handleBillCreated = async (billData: BillCreate) => {
-    try {
-      const response = await billsAPI.createBill(billData);
-      console.log('账单创建成功:', response.data);
-      // 可以在这里添加成功提示
-    } catch (error) {
-      console.error('创建账单失败:', error);
-    }
-  };
-
-  // 处理多账单创建
-  const handleBillsCreated = async (billsData: BillCreate[]) => {
-    try {
-      for (const billData of billsData) {
-        const response = await billsAPI.createBill(billData);
-        console.log('账单创建成功:', response.data);
-      }
-      // 可以在这里添加成功提示
-    } catch (error) {
-      console.error('创建账单失败:', error);
-    }
-  };
 
   return (
     <ProtectedRoute>
@@ -46,7 +21,7 @@ export default function ChatPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-[calc(100%-80px)] p-0">
-                <ChatInterface onBillCreated={handleBillCreated} onBillsCreated={handleBillsCreated} />
+                <ChatInterface />
               </CardContent>
             </Card>
           </div>

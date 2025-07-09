@@ -213,6 +213,7 @@ class AIService:
         """聊天对话"""
         # 首先尝试分析是否包含账单信息
         analysis = self.analyze_text(message)
+        print(analysis)
         
         if analysis.get("has_bill", False):
             bills = analysis.get("bills", [])

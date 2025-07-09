@@ -373,6 +373,7 @@ async def chat(request: ChatRequest, current_user = Depends(get_current_user), d
         bill_ids = []
         if result.get("bills"):
             for bill_data in result["bills"]:
+                print(bill_data)
                 # 添加默认日期并转换为BillCreate对象
                 bill_data_with_date = {**bill_data, "date": datetime.now()}
                 bill_create = BillCreate(**bill_data_with_date)
