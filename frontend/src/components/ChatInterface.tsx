@@ -36,6 +36,10 @@ export default function ChatInterface() {
       }));
       
       setMessages(convertedMessages);
+      // 在下一个渲染周期中设置滚动位置
+      setTimeout(() => {
+        initializeScrollPosition();
+      }, 0);
     } catch (error) {
       console.error('加载聊天历史失败:', error);
     } finally {
@@ -48,13 +52,27 @@ export default function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // 初始化时设置滚动位置到底部
+  const initializeScrollPosition = () => {
+    const messagesContainer = messagesEndRef.current?.parentElement;
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  };
+
   useEffect(() => {
     loadChatHistory();
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // 只有在有新消息时才滚动到底部，避免初始化时的闪烁
+    if (messages.length > 0 && !isLoadingHistory) {
+      scrollToBottom();
+    } else if (messages.length === 0 && !isLoadingHistory) {
+      // 当没有消息且加载完成时，确保显示在底部
+      initializeScrollPosition();
+    }
+  }, [messages, isLoadingHistory]);
 
   // 添加消息到聊天（本地状态）
   const addMessage = (content: string, type: 'user' | 'assistant', bills?: BillCreate[]) => {
@@ -221,14 +239,14 @@ export default function ChatInterface() {
   return (
     <div className="flex flex-col h-full">
       {/* 聊天消息区域 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col justify-end">
         {isLoadingHistory ? (
           <div className="flex justify-center items-center h-32">
             <Loader2 className="h-6 w-6 animate-spin" />
             <span className="ml-2">加载聊天记录...</span>
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-gray-500 mt-8">
+          <div className="text-center text-gray-500 mt-auto mb-auto">
             <p className="text-lg font-medium">欢迎使用AI记账助手！</p>
             <p className="text-sm mt-2">你可以通过文字、语音或图片来记录账单</p>
           </div>
