@@ -3,4 +3,8 @@ uvicorn
 sqlalchemy
 psycopg2-binary
 python-dotenv
-openai 
+openai
+dashscope
+python-multipart
+Pillow
+pydub 

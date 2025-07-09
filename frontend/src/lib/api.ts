@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { User, Bill, BillCreate, AuthResponse, LoginForm, RegisterForm } from '@/types';
+import { User, Bill, BillCreate, AuthResponse, LoginForm, RegisterForm, AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionResult, ImageAnalysisResult } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -57,6 +57,21 @@ export const billsAPI = {
   getBills: () => api.get<Bill[]>('/bills/'),
   createBill: (data: BillCreate) => api.post<Bill>('/bills/', data),
   deleteBill: (id: number) => api.delete(`/bills/${id}`),
+};
+
+// AI记账助手相关API
+export const aiAPI = {
+  // 分析用户输入（文本、图片、音频）
+  analyzeInput: (data: AIAnalysisRequest) => api.post<AIAnalysisResponse>('/ai/analyze', data),
+  
+  // 语音识别
+  recognizeVoice: (audioData: string) => api.post<VoiceRecognitionResult>('/ai/voice', { audio: audioData }),
+  
+  // 图片分析
+  analyzeImage: (imageData: string) => api.post<ImageAnalysisResult>('/ai/image', { image: imageData }),
+  
+  // 聊天对话
+  chat: (message: string) => api.post<AIAnalysisResponse>('/ai/chat', { message }),
 };
 
 export default api; 

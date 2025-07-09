@@ -7,10 +7,10 @@ from datetime import timedelta
 
 from database import engine
 from models import Base
-from schemas import User, UserCreate, Bill, BillCreate, Token
+from schemas import User, UserCreate, Bill, BillCreate, Token, AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionRequest, VoiceRecognitionResponse, ImageAnalysisRequest, ImageAnalysisResponse, ChatRequest, ChatResponse
 from crud import create_user, get_user_by_email, verify_password, get_bills, create_bill, delete_bill
 from deps import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES, get_db
-from ai import classify_transaction
+from ai_service import ai_service
 
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
@@ -62,9 +62,6 @@ async def read_bills(skip: int = 0, limit: int = 100, current_user: User = Depen
 
 @app.post("/bills/", response_model=Bill)
 async def create_user_bill(bill: BillCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # 如果没有分类，使用AI自动分类
-    if not bill.category and bill.description:
-        bill.category = classify_transaction(bill.description, bill.amount)
     return create_bill(db=db, bill=bill, user_id=current_user.id)
 
 @app.delete("/bills/{bill_id}")
@@ -76,4 +73,113 @@ async def delete_user_bill(bill_id: int, current_user: User = Depends(get_curren
 
 @app.get("/me", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_user)):
-    return current_user 
+    return current_user
+
+# AI相关端点
+@app.post("/ai/analyze", response_model=AIAnalysisResponse)
+async def analyze_input(request: AIAnalysisRequest, current_user: User = Depends(get_current_user)):
+    """分析用户输入（文本、图片、音频）"""
+    try:
+        if request.image:
+            # 分析图片
+            result = ai_service.analyze_image(request.image)
+            if result.get("has_bill", False):
+                bills = result.get("bills", [])
+                if bills:
+                    return AIAnalysisResponse(
+                        message=result.get("message", "识别到账单信息"),
+                        bill=bills[0],  # 返回第一个账单
+                        confidence=0.9
+                    )
+            return AIAnalysisResponse(
+                message=result.get("message", "未识别到账单信息"),
+                bill=None,
+                confidence=0.0
+            )
+        elif request.audio:
+            # 语音识别
+            voice_result = ai_service.recognize_voice(request.audio)
+            if voice_result.get("success", False):
+                text = voice_result.get("text", "")
+                # 继续分析文本
+                text_result = ai_service.analyze_text(text)
+                if text_result.get("has_bill", False):
+                    bill = text_result.get("bill")
+                    return AIAnalysisResponse(
+                        message=f"语音识别：{text}\n{text_result.get('message', '')}",
+                        bill=bill,
+                        confidence=voice_result.get("confidence", 0.0)
+                    )
+                return AIAnalysisResponse(
+                    message=f"语音识别：{text}\n{text_result.get('message', '')}",
+                    bill=None,
+                    confidence=voice_result.get("confidence", 0.0)
+                )
+            else:
+                return AIAnalysisResponse(
+                    message=voice_result.get("message", "语音识别失败"),
+                    bill=None,
+                    confidence=0.0
+                )
+        else:
+            # 纯文本分析
+            result = ai_service.analyze_text(request.message)
+            if result.get("has_bill", False):
+                bill = result.get("bill")
+                return AIAnalysisResponse(
+                    message=result.get("message", "识别到账单信息"),
+                    bill=bill,
+                    confidence=0.9
+                )
+            return AIAnalysisResponse(
+                message=result.get("message", "未识别到账单信息"),
+                bill=None,
+                confidence=0.0
+            )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI分析失败: {str(e)}")
+
+@app.post("/ai/voice", response_model=VoiceRecognitionResponse)
+async def recognize_voice(request: VoiceRecognitionRequest, current_user: User = Depends(get_current_user)):
+    """语音识别"""
+    try:
+        result = ai_service.recognize_voice(request.audio)
+        if result.get("success", False):
+            return VoiceRecognitionResponse(
+                text=result.get("text", ""),
+                confidence=result.get("confidence", 0.0)
+            )
+        else:
+            raise HTTPException(status_code=400, detail=result.get("message", "语音识别失败"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"语音识别失败: {str(e)}")
+
+@app.post("/ai/image", response_model=ImageAnalysisResponse)
+async def analyze_image(request: ImageAnalysisRequest, current_user: User = Depends(get_current_user)):
+    """图片分析"""
+    try:
+        result = ai_service.analyze_image(request.image)
+        if result.get("has_bill", False):
+            bills = result.get("bills", [])
+            return ImageAnalysisResponse(
+                text=result.get("message", "识别到账单信息"),
+                bills=bills
+            )
+        return ImageAnalysisResponse(
+            text=result.get("message", "未识别到账单信息"),
+            bills=[]
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"图片分析失败: {str(e)}")
+
+@app.post("/ai/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest, current_user: User = Depends(get_current_user)):
+    """聊天对话"""
+    try:
+        result = ai_service.chat(request.message)
+        return ChatResponse(
+            message=result.get("message", ""),
+            bill=result.get("bill")
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"聊天失败: {str(e)}") 
