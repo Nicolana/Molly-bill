@@ -157,20 +157,32 @@ async def get_recent_messages(
     """获取最近的聊天消息"""
     messages = get_recent_chat_messages(db, user_id=current_user.id, limit=limit)
     
-    # 将SQLAlchemy模型转换为Pydantic模型
+    # 将SQLAlchemy模型转换为Pydantic模型，包含账单信息
     message_schemas = []
     for message in messages:
-        message_schema = ChatMessage(
-            id=message.id,
-            content=message.content,
-            message_type=message.message_type,
-            input_type=message.input_type,
-            ai_confidence=message.ai_confidence,
-            timestamp=message.timestamp,
-            user_id=message.user_id,
-            bill_id=message.bill_id,
-            is_processed=message.is_processed
-        )
+        # 获取关联的账单信息
+        bills = []
+        if message.bill_id and message.bill:
+            bill_data = {
+                "amount": message.bill.amount,
+                "category": message.bill.category,
+                "description": message.bill.description,
+                "date": message.bill.date.isoformat() if message.bill.date else None
+            }
+            bills.append(bill_data)
+        
+        message_schema = {
+            "id": message.id,
+            "content": message.content,
+            "message_type": message.message_type,
+            "input_type": message.input_type,
+            "ai_confidence": message.ai_confidence,
+            "timestamp": message.timestamp,
+            "user_id": message.user_id,
+            "bill_id": message.bill_id,
+            "is_processed": message.is_processed,
+            "bills": bills  # 添加账单信息
+        }
         message_schemas.append(message_schema)
     
     return success_response(data=message_schemas, message="获取最近聊天消息成功")

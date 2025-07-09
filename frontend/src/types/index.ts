@@ -57,6 +57,20 @@ export interface DBChatMessage {
   is_processed: boolean;
 }
 
+// 后端返回的聊天消息类型（包含账单信息）
+export interface APIChatMessage {
+  id: number;
+  content: string;
+  message_type: 'user' | 'assistant';
+  timestamp: string;
+  user_id: number;
+  bill_id?: number;
+  input_type?: string;
+  ai_confidence?: number;
+  is_processed: boolean;
+  bills: BillCreate[]; // 关联的账单信息
+}
+
 export interface ChatHistoryResponse {
   messages: DBChatMessage[];
   total: number;

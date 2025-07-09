@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChatMessage, BillCreate } from '@/types';
+import { ChatMessage, BillCreate, APIChatMessage } from '@/types';
 import { aiAPI, chatAPI } from '@/lib/api';
 import { Mic, MicOff, Camera, Send, Loader2, Trash2 } from 'lucide-react';
 import BillCard from './BillCard';
@@ -45,7 +45,7 @@ export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
         type: dbMsg.message_type as 'user' | 'assistant',
         content: dbMsg.content,
         timestamp: new Date(dbMsg.timestamp),
-        bill: undefined // 暂时不处理账单关联，可以后续优化
+        bills: dbMsg.bills || [] // 使用后端返回的账单信息
       }));
 
       console.log(convertedMessages);
