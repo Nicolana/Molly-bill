@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from database import engine
 from models import Base
@@ -177,7 +177,9 @@ async def analyze_input(request: AIAnalysisRequest, current_user: User = Depends
                 if text_result.get("has_bill", False):
                     bill_data = text_result.get("bill")
                     # 创建账单
-                    bill = create_bill(db=db, bill=bill_data, user_id=current_user.id)
+                    bill_data_with_date = {**bill_data, "date": datetime.now()}
+                    bill_create = BillCreate(**bill_data_with_date)
+                    bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
                     # 保存AI回复并关联账单
                     ai_message = create_chat_message(
                         db=db,
@@ -235,7 +237,9 @@ async def analyze_input(request: AIAnalysisRequest, current_user: User = Depends
             if result.get("has_bill", False):
                 bill_data = result.get("bill")
                 # 创建账单
-                bill = create_bill(db=db, bill=bill_data, user_id=current_user.id)
+                bill_data_with_date = {**bill_data, "date": datetime.now()}
+                bill_create = BillCreate(**bill_data_with_date)
+                bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
                 # 保存AI回复并关联账单
                 ai_message = create_chat_message(
                     db=db,
@@ -327,7 +331,10 @@ async def chat(request: ChatRequest, current_user: User = Depends(get_current_us
         bill_ids = []
         if result.get("bills"):
             for bill_data in result["bills"]:
-                bill = create_bill(db=db, bill=bill_data, user_id=current_user.id)
+                # 添加默认日期并转换为BillCreate对象
+                bill_data_with_date = {**bill_data, "date": datetime.now()}
+                bill_create = BillCreate(**bill_data_with_date)
+                bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
                 bill_ids.append(bill.id)
         
         # 保存AI回复

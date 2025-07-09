@@ -38,7 +38,7 @@ class AIService:
                     "category": "分类"
                 }}
             ],
-            "message": "已识别到{账单数量}笔消费信息"
+            "message": "已识别到消费信息"
         }}
 
         如果没有消费信息，返回：
@@ -63,7 +63,7 @@ class AIService:
                     "category": "餐饮"
                 }}
             ],
-            "message": "已识别到2笔消费信息：午餐 ¥18，咖啡 ¥13"
+            "message": "已识别到消费信息：午餐 ¥18，咖啡 ¥13"
         }}
 
         文本内容：{text}

@@ -1,25 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 
 export default function HomePage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, isLoading } = useAuthStore();
 
   useEffect(() => {
-    // 检查本地存储中的token
-    const token = localStorage.getItem('token');
-    if (token) {
-      useAuthStore.setState({ token, isAuthenticated: true });
-      router.push('/dashboard');
-    } else {
-      router.push('/login');
+    if (!isLoading) {
+      if (isAuthenticated) {
+        router.push('/dashboard');
+      } else {
+        router.push('/login');
+      }
     }
-    setIsLoading(false);
-  }, [router]);
+  }, [isAuthenticated, isLoading, router]);
 
+  // 在认证状态初始化期间显示加载界面
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { authAPI } from '@/lib/api';
+import PublicRoute from '@/components/PublicRoute';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -32,8 +33,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
+    <PublicRoute>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>注册</CardTitle>
           <CardDescription>创建您的Molly Bill账户</CardDescription>
@@ -75,5 +77,6 @@ export default function RegisterPage() {
         </CardContent>
       </Card>
     </div>
+    </PublicRoute>
   );
 } 

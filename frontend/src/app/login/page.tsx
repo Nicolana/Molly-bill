@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { authAPI } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
+import PublicRoute from '@/components/PublicRoute';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -31,10 +32,6 @@ export default function LoginPage() {
       const { access_token } = response.data;
       console.log('获取到的token:', access_token);
       
-      // 手动设置token到localStorage
-      localStorage.setItem('token', access_token);
-      console.log('Token已存储到localStorage');
-      
       // 获取用户信息
       console.log('获取用户信息...');
       const userResponse = await authAPI.getMe();
@@ -54,8 +51,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
+    <PublicRoute>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>登录</CardTitle>
           <CardDescription>登录您的Molly Bill账户</CardDescription>
@@ -97,5 +95,6 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+    </PublicRoute>
   );
 } 
