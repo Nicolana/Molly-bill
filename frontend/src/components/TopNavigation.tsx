@@ -41,6 +41,16 @@ export default function TopNavigation() {
 
           {/* 中间：桌面端导航 */}
           <nav className="hidden md:flex items-center space-x-1">
+            <Link href="/dashboard">
+              <Button
+                variant={isActive('/dashboard') ? 'default' : 'ghost'}
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span>仪表盘</span>
+              </Button>
+            </Link>
             <Link href="/dashboard/chat">
               <Button
                 variant={isActive('/dashboard/chat') ? 'default' : 'ghost'}
@@ -86,6 +96,17 @@ export default function TopNavigation() {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 py-4">
             <div className="flex flex-col space-y-2">
+              <Link href="/dashboard">
+                <Button
+                  variant={isActive('/dashboard') ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center space-x-2 justify-start w-full"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>仪表盘</span>
+                </Button>
+              </Link>
               <Link href="/dashboard/chat">
                 <Button
                   variant={isActive('/dashboard/chat') ? 'default' : 'ghost'}
