@@ -44,6 +44,24 @@ export interface ChatMessage {
   bill?: BillCreate; // 如果是AI解析出的账单信息
 }
 
+// 数据库聊天消息类型
+export interface DBChatMessage {
+  id: number;
+  content: string;
+  message_type: 'user' | 'assistant';
+  timestamp: string;
+  user_id: number;
+  bill_id?: number;
+  input_type?: string;
+  ai_confidence?: number;
+  is_processed: boolean;
+}
+
+export interface ChatHistoryResponse {
+  messages: DBChatMessage[];
+  total: number;
+}
+
 export interface AIAnalysisRequest {
   message: string;
   image?: string; // base64编码的图片

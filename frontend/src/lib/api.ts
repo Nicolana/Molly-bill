@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { User, Bill, BillCreate, AuthResponse, LoginForm, RegisterForm, AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionResult, ImageAnalysisResult } from '@/types';
+import { User, Bill, BillCreate, AuthResponse, LoginForm, RegisterForm, AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionResult, ImageAnalysisResult, DBChatMessage, ChatHistoryResponse } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -57,6 +57,21 @@ export const billsAPI = {
   getBills: () => api.get<Bill[]>('/bills/'),
   createBill: (data: BillCreate) => api.post<Bill>('/bills/', data),
   deleteBill: (id: number) => api.delete(`/bills/${id}`),
+};
+
+// 聊天消息相关API
+export const chatAPI = {
+  // 获取聊天历史
+  getChatHistory: (skip: number = 0, limit: number = 50) => 
+    api.get<ChatHistoryResponse>(`/chat/messages?skip=${skip}&limit=${limit}`),
+  
+  // 获取最近的聊天消息
+  getRecentMessages: (limit: number = 50) => 
+    api.get<DBChatMessage[]>(`/chat/messages/recent?limit=${limit}`),
+  
+  // 删除聊天消息
+  deleteMessage: (messageId: number) => 
+    api.delete(`/chat/messages/${messageId}`),
 };
 
 // AI记账助手相关API

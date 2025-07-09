@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChatMessage, BillCreate } from '@/types';
-import { aiAPI } from '@/lib/api';
-import { Mic, MicOff, Camera, Send, Loader2 } from 'lucide-react';
+import { aiAPI, chatAPI } from '@/lib/api';
+import { Mic, MicOff, Camera, Send, Loader2, Trash2 } from 'lucide-react';
 
 interface ChatInterfaceProps {
   onBillCreated?: (bill: BillCreate) => void;
@@ -17,9 +17,34 @@ export default function ChatInterface({ onBillCreated }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 加载历史聊天记录
+  const loadChatHistory = async () => {
+    try {
+      setIsLoadingHistory(true);
+      const response = await chatAPI.getRecentMessages(100);
+      const dbMessages = response.data;
+      
+      // 转换数据库消息格式为前端格式
+      const convertedMessages: ChatMessage[] = dbMessages.map(dbMsg => ({
+        id: dbMsg.id.toString(),
+        type: dbMsg.message_type as 'user' | 'assistant',
+        content: dbMsg.content,
+        timestamp: new Date(dbMsg.timestamp),
+        bill: undefined // 暂时不处理账单关联，可以后续优化
+      }));
+      
+      setMessages(convertedMessages);
+    } catch (error) {
+      console.error('加载聊天历史失败:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
 
   // 自动滚动到底部
   const scrollToBottom = () => {
@@ -27,10 +52,14 @@ export default function ChatInterface({ onBillCreated }: ChatInterfaceProps) {
   };
 
   useEffect(() => {
+    loadChatHistory();
+  }, []);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // 添加消息到聊天
+  // 添加消息到聊天（本地状态）
   const addMessage = (content: string, type: 'user' | 'assistant', bill?: BillCreate) => {
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -50,14 +79,14 @@ export default function ChatInterface({ onBillCreated }: ChatInterfaceProps) {
     setInputValue('');
     setIsLoading(true);
 
-    // 添加用户消息
+    // 添加用户消息到本地状态
     addMessage(userMessage, 'user');
 
     try {
       const response = await aiAPI.chat(userMessage);
       const { message, bill } = response.data;
 
-      // 添加AI回复
+      // 添加AI回复到本地状态
       addMessage(message, 'assistant', bill);
 
       // 如果有账单信息，通知父组件
@@ -184,40 +213,94 @@ export default function ChatInterface({ onBillCreated }: ChatInterfaceProps) {
     }
   };
 
+  // 删除消息
+  const deleteMessage = async (messageId: string) => {
+    try {
+      await chatAPI.deleteMessage(parseInt(messageId));
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    } catch (error) {
+      console.error('删除消息失败:', error);
+    }
+  };
+
+  // 清空聊天记录
+  const clearChat = async () => {
+    if (confirm('确定要清空所有聊天记录吗？')) {
+      try {
+        // 这里可以添加清空所有消息的API调用
+        setMessages([]);
+      } catch (error) {
+        console.error('清空聊天记录失败:', error);
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto">
       {/* 聊天消息区域 */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && (
+        {isLoadingHistory ? (
+          <div className="flex justify-center items-center h-32">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span className="ml-2">加载聊天记录...</span>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="text-center text-gray-500 mt-8">
             <p className="text-lg font-medium">欢迎使用AI记账助手！</p>
             <p className="text-sm mt-2">你可以通过文字、语音或图片来记录账单</p>
           </div>
+        ) : (
+          <>
+            {/* 清空聊天按钮 */}
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearChat}
+                className="text-gray-500 hover:text-red-500"
+              >
+                清空聊天记录
+              </Button>
+            </div>
+            
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <Card className={`max-w-xs lg:max-w-md relative ${
+                  message.type === 'user' 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-gray-100'
+                }`}>
+                  <CardContent className="p-3">
+                    <p className="text-sm">{message.content}</p>
+                    {message.bill && (
+                      <div className="mt-2 p-2 bg-white bg-opacity-20 rounded text-xs">
+                        <p>识别到账单: ¥{message.bill.amount}</p>
+                        {message.bill.description && <p>描述: {message.bill.description}</p>}
+                        {message.bill.category && <p>分类: {message.bill.category}</p>}
+                      </div>
+                    )}
+                    <p className="text-xs opacity-70 mt-1">
+                      {message.timestamp.toLocaleTimeString()}
+                    </p>
+                  </CardContent>
+                  
+                  {/* 删除按钮 */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteMessage(message.id)}
+                    className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </Card>
+              </div>
+            ))}
+          </>
         )}
-        
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <Card className={`max-w-xs lg:max-w-md ${
-              message.type === 'user' 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-gray-100'
-            }`}>
-              <CardContent className="p-3">
-                <p className="text-sm">{message.content}</p>
-                {message.bill && (
-                  <div className="mt-2 p-2 bg-white bg-opacity-20 rounded text-xs">
-                    <p>识别到账单: ¥{message.bill.amount}</p>
-                    {message.bill.description && <p>描述: {message.bill.description}</p>}
-                    {message.bill.category && <p>分类: {message.bill.category}</p>}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        ))}
         
         {isLoading && (
           <div className="flex justify-start">

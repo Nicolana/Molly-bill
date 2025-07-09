@@ -7,8 +7,8 @@ from datetime import timedelta
 
 from database import engine
 from models import Base
-from schemas import User, UserCreate, Bill, BillCreate, Token, AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionRequest, VoiceRecognitionResponse, ImageAnalysisRequest, ImageAnalysisResponse, ChatRequest, ChatResponse
-from crud import create_user, get_user_by_email, verify_password, get_bills, create_bill, delete_bill
+from schemas import User, UserCreate, Bill, BillCreate, Token, AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionRequest, VoiceRecognitionResponse, ImageAnalysisRequest, ImageAnalysisResponse, ChatRequest, ChatResponse, ChatMessage, ChatHistoryResponse, ChatMessageCreate
+from crud import create_user, get_user_by_email, verify_password, get_bills, create_bill, delete_bill, create_chat_message, get_chat_messages, get_chat_messages_count, get_recent_chat_messages, delete_chat_message
 from deps import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES, get_db
 from ai_service import ai_service
 
@@ -75,22 +75,93 @@ async def delete_user_bill(bill_id: int, current_user: User = Depends(get_curren
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
+# 聊天消息相关端点
+@app.get("/chat/messages", response_model=ChatHistoryResponse)
+async def get_chat_history(
+    skip: int = 0, 
+    limit: int = 50, 
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """获取聊天消息历史"""
+    messages = get_chat_messages(db, user_id=current_user.id, skip=skip, limit=limit)
+    total = get_chat_messages_count(db, user_id=current_user.id)
+    return ChatHistoryResponse(messages=messages, total=total)
+
+@app.get("/chat/messages/recent", response_model=List[ChatMessage])
+async def get_recent_messages(
+    limit: int = 50,
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """获取最近的聊天消息"""
+    return get_recent_chat_messages(db, user_id=current_user.id, limit=limit)
+
+@app.delete("/chat/messages/{message_id}")
+async def delete_message(
+    message_id: int,
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """删除聊天消息"""
+    success = delete_chat_message(db, message_id=message_id, user_id=current_user.id)
+    if not success:
+        raise HTTPException(status_code=404, detail="消息不存在或无权限删除")
+    return {"message": "消息已删除"}
+
 # AI相关端点
 @app.post("/ai/analyze", response_model=AIAnalysisResponse)
-async def analyze_input(request: AIAnalysisRequest, current_user: User = Depends(get_current_user)):
+async def analyze_input(request: AIAnalysisRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """分析用户输入（文本、图片、音频）"""
     try:
+        # 保存用户输入消息
+        user_message = create_chat_message(
+            db=db,
+            message=ChatMessageCreate(
+                content=request.message,
+                message_type="user",
+                input_type="text" if not request.image and not request.audio else ("image" if request.image else "voice")
+            ),
+            user_id=current_user.id
+        )
+        
         if request.image:
             # 分析图片
             result = ai_service.analyze_image(request.image)
             if result.get("has_bill", False):
                 bills = result.get("bills", [])
                 if bills:
+                    # 创建账单
+                    bill = create_bill(db=db, bill=bills[0], user_id=current_user.id)
+                    # 保存AI回复并关联账单
+                    ai_message = create_chat_message(
+                        db=db,
+                        message=ChatMessageCreate(
+                            content=result.get("message", "识别到账单信息"),
+                            message_type="assistant",
+                            input_type="image",
+                            ai_confidence=0.9
+                        ),
+                        user_id=current_user.id,
+                        bill_id=bill.id
+                    )
                     return AIAnalysisResponse(
                         message=result.get("message", "识别到账单信息"),
-                        bill=bills[0],  # 返回第一个账单
+                        bill=bills[0],
                         confidence=0.9
                     )
+            
+            # 保存AI回复
+            ai_message = create_chat_message(
+                db=db,
+                message=ChatMessageCreate(
+                    content=result.get("message", "未识别到账单信息"),
+                    message_type="assistant",
+                    input_type="image",
+                    ai_confidence=0.0
+                ),
+                user_id=current_user.id
+            )
             return AIAnalysisResponse(
                 message=result.get("message", "未识别到账单信息"),
                 bill=None,
@@ -104,18 +175,55 @@ async def analyze_input(request: AIAnalysisRequest, current_user: User = Depends
                 # 继续分析文本
                 text_result = ai_service.analyze_text(text)
                 if text_result.get("has_bill", False):
-                    bill = text_result.get("bill")
+                    bill_data = text_result.get("bill")
+                    # 创建账单
+                    bill = create_bill(db=db, bill=bill_data, user_id=current_user.id)
+                    # 保存AI回复并关联账单
+                    ai_message = create_chat_message(
+                        db=db,
+                        message=ChatMessageCreate(
+                            content=f"语音识别：{text}\n{text_result.get('message', '')}",
+                            message_type="assistant",
+                            input_type="voice",
+                            ai_confidence=voice_result.get("confidence", 0.0)
+                        ),
+                        user_id=current_user.id,
+                        bill_id=bill.id
+                    )
                     return AIAnalysisResponse(
                         message=f"语音识别：{text}\n{text_result.get('message', '')}",
-                        bill=bill,
+                        bill=bill_data,
                         confidence=voice_result.get("confidence", 0.0)
                     )
+                
+                # 保存AI回复
+                ai_message = create_chat_message(
+                    db=db,
+                    message=ChatMessageCreate(
+                        content=f"语音识别：{text}\n{text_result.get('message', '')}",
+                        message_type="assistant",
+                        input_type="voice",
+                        ai_confidence=voice_result.get("confidence", 0.0)
+                    ),
+                    user_id=current_user.id
+                )
                 return AIAnalysisResponse(
                     message=f"语音识别：{text}\n{text_result.get('message', '')}",
                     bill=None,
                     confidence=voice_result.get("confidence", 0.0)
                 )
             else:
+                # 保存AI回复
+                ai_message = create_chat_message(
+                    db=db,
+                    message=ChatMessageCreate(
+                        content=voice_result.get("message", "语音识别失败"),
+                        message_type="assistant",
+                        input_type="voice",
+                        ai_confidence=0.0
+                    ),
+                    user_id=current_user.id
+                )
                 return AIAnalysisResponse(
                     message=voice_result.get("message", "语音识别失败"),
                     bill=None,
@@ -125,12 +233,38 @@ async def analyze_input(request: AIAnalysisRequest, current_user: User = Depends
             # 纯文本分析
             result = ai_service.analyze_text(request.message)
             if result.get("has_bill", False):
-                bill = result.get("bill")
+                bill_data = result.get("bill")
+                # 创建账单
+                bill = create_bill(db=db, bill=bill_data, user_id=current_user.id)
+                # 保存AI回复并关联账单
+                ai_message = create_chat_message(
+                    db=db,
+                    message=ChatMessageCreate(
+                        content=result.get("message", "识别到账单信息"),
+                        message_type="assistant",
+                        input_type="text",
+                        ai_confidence=0.9
+                    ),
+                    user_id=current_user.id,
+                    bill_id=bill.id
+                )
                 return AIAnalysisResponse(
                     message=result.get("message", "识别到账单信息"),
-                    bill=bill,
+                    bill=bill_data,
                     confidence=0.9
                 )
+            
+            # 保存AI回复
+            ai_message = create_chat_message(
+                db=db,
+                message=ChatMessageCreate(
+                    content=result.get("message", "未识别到账单信息"),
+                    message_type="assistant",
+                    input_type="text",
+                    ai_confidence=0.0
+                ),
+                user_id=current_user.id
+            )
             return AIAnalysisResponse(
                 message=result.get("message", "未识别到账单信息"),
                 bill=None,
@@ -140,7 +274,7 @@ async def analyze_input(request: AIAnalysisRequest, current_user: User = Depends
         raise HTTPException(status_code=500, detail=f"AI分析失败: {str(e)}")
 
 @app.post("/ai/voice", response_model=VoiceRecognitionResponse)
-async def recognize_voice(request: VoiceRecognitionRequest, current_user: User = Depends(get_current_user)):
+async def recognize_voice(request: VoiceRecognitionRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """语音识别"""
     try:
         result = ai_service.recognize_voice(request.audio)
@@ -155,7 +289,7 @@ async def recognize_voice(request: VoiceRecognitionRequest, current_user: User =
         raise HTTPException(status_code=500, detail=f"语音识别失败: {str(e)}")
 
 @app.post("/ai/image", response_model=ImageAnalysisResponse)
-async def analyze_image(request: ImageAnalysisRequest, current_user: User = Depends(get_current_user)):
+async def analyze_image(request: ImageAnalysisRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """图片分析"""
     try:
         result = ai_service.analyze_image(request.image)
@@ -173,10 +307,41 @@ async def analyze_image(request: ImageAnalysisRequest, current_user: User = Depe
         raise HTTPException(status_code=500, detail=f"图片分析失败: {str(e)}")
 
 @app.post("/ai/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest, current_user: User = Depends(get_current_user)):
+async def chat(request: ChatRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """聊天对话"""
     try:
+        # 保存用户消息
+        user_message = create_chat_message(
+            db=db,
+            message=ChatMessageCreate(
+                content=request.message,
+                message_type="user",
+                input_type="text"
+            ),
+            user_id=current_user.id
+        )
+        
         result = ai_service.chat(request.message)
+        
+        # 如果有账单信息，创建账单
+        bill_id = None
+        if result.get("bill"):
+            bill = create_bill(db=db, bill=result["bill"], user_id=current_user.id)
+            bill_id = bill.id
+        
+        # 保存AI回复
+        ai_message = create_chat_message(
+            db=db,
+            message=ChatMessageCreate(
+                content=result.get("message", ""),
+                message_type="assistant",
+                input_type="text",
+                ai_confidence=0.9 if result.get("bill") else 0.0
+            ),
+            user_id=current_user.id,
+            bill_id=bill_id
+        )
+        
         return ChatResponse(
             message=result.get("message", ""),
             bill=result.get("bill")
