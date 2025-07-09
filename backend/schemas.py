@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Any, Union
 from datetime import datetime
+from enum import Enum
 
 # 统一响应格式
 class BaseResponse(BaseModel):
@@ -31,9 +32,15 @@ class User(UserBase):
     class Config:
         from_attributes = True
 
+# 账单类型枚举
+class BillType(str, Enum):
+    EXPENSE = "expense"  # 支出
+    INCOME = "income"    # 收入
+
 # 账单相关模型
 class BillBase(BaseModel):
     amount: float
+    type: BillType = BillType.EXPENSE  # 默认为支出
     category: Optional[str] = None
     description: Optional[str] = None
     date: Optional[datetime] = None

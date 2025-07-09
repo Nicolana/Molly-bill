@@ -1,7 +1,12 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean, Enum
 from sqlalchemy.orm import relationship
 from database import Base
 import datetime
+import enum
+
+class BillType(enum.Enum):
+    EXPENSE = "expense"  # 支出
+    INCOME = "income"    # 收入
 
 class User(Base):
     __tablename__ = "users"
@@ -16,6 +21,7 @@ class Bill(Base):
     __tablename__ = "bills"
     id = Column(Integer, primary_key=True, index=True)
     amount = Column(Float, nullable=False)
+    type = Column(Enum(BillType), default=BillType.EXPENSE, nullable=False)  # 收入或支出
     category = Column(String, index=True)
     description = Column(String)
     date = Column(DateTime, default=datetime.datetime.utcnow)

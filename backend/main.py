@@ -5,10 +5,10 @@ from typing import List
 from datetime import timedelta, datetime
 
 from database import engine
-from models import Base
+from models import Base, BillType
 from schemas import (
     User, UserCreate, Bill, BillCreate, Token, BaseResponse, PaginatedResponse,
-    ChatRequest, ChatResponse, ChatMessage, ChatHistoryResponse, ChatMessageCreate, LoginRequest
+    ChatRequest, ChatResponse, ChatMessage, ChatHistoryResponse, ChatMessageCreate, LoginRequest, BillType
 )
 from crud import create_user, get_user_by_email, verify_password, get_bills, get_bills_count, create_bill, delete_bill, create_chat_message, get_chat_messages, get_chat_messages_count, get_recent_chat_messages, delete_chat_message
 from deps import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES, get_db
@@ -72,6 +72,7 @@ async def read_bills(skip: int = 0, limit: int = 100, current_user = Depends(get
         bill_schema = Bill(
             id=bill.id,
             amount=bill.amount,
+            type=bill.type,
             category=bill.category,
             description=bill.description,
             date=bill.date,
@@ -238,6 +239,9 @@ async def chat(request: ChatRequest, current_user = Depends(get_current_user), d
             if bills:
                 for bill_data in bills:
                     bill_data_with_date = {**bill_data, "date": datetime.now()}
+                    # 确保账单类型存在，默认为支出
+                    if "type" not in bill_data_with_date:
+                        bill_data_with_date["type"] = BillType.EXPENSE
                     bill_create = BillCreate(**bill_data_with_date)
                     bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
                     bill_ids.append(bill.id)
@@ -281,6 +285,9 @@ async def chat(request: ChatRequest, current_user = Depends(get_current_user), d
                     bills = [bill_data]
                     # 创建账单
                     bill_data_with_date = {**bill_data, "date": datetime.now()}
+                    # 确保账单类型存在，默认为支出
+                    if "type" not in bill_data_with_date:
+                        bill_data_with_date["type"] = BillType.EXPENSE
                     bill_create = BillCreate(**bill_data_with_date)
                     bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
                     
@@ -350,6 +357,9 @@ async def chat(request: ChatRequest, current_user = Depends(get_current_user), d
             if bills:
                 for bill_data in bills:
                     bill_data_with_date = {**bill_data, "date": datetime.now()}
+                    # 确保账单类型存在，默认为支出
+                    if "type" not in bill_data_with_date:
+                        bill_data_with_date["type"] = BillType.EXPENSE
                     bill_create = BillCreate(**bill_data_with_date)
                     bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
                     bill_ids.append(bill.id)
