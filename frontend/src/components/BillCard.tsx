@@ -22,6 +22,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { BillCreate } from '@/types';
+import dayjs from 'dayjs';
 
 interface BillCardProps {
   bill: BillCreate;
@@ -53,32 +54,48 @@ export default function BillCard({ bill, index }: BillCardProps) {
   const IconComponent = categoryIcons[bill.category || '其他'] || DollarSign;
 
   return (
-    <Card className="bg-white bg-opacity-90 border-l-4 border-l-blue-500 shadow-sm">
-      <CardContent className="p-3">
-        <div className="flex items-center space-x-3">
+    <Card className="bg-white shadow-sm hover:shadow-md transition-shadow py-0">
+      <CardContent className="p-4 min-w-[300px]">
+        {/* 顶部区域 */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs text-gray-500">已记录：费用</div>
+          <div className="text-xs text-gray-400">
+            {bill.date ? dayjs(bill.date).format('MM-DD HH:mm') : '刚刚'}
+          </div>
+        </div>
+        
+        {/* 主要内容区域 */}
+        <div className="flex items-start space-x-3">
+          {/* 左侧图标 */}
           <div className="flex-shrink-0">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <IconComponent className="h-4 w-4 text-blue-600" />
+            <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100">
+              <IconComponent className="h-6 w-6 text-blue-600" />
             </div>
           </div>
+          
+          {/* 中间内容 */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                {/* 分类作为标题 */}
+                <h4 className="font-medium text-gray-900 mb-1">
+                  {bill.category || '未分类'}
+                </h4>
+                {/* 描述作为副标题 */}
+                {bill.description && (
+                  <p className="text-sm text-gray-600 truncate">
+                    {bill.description}
+                  </p>
+                )}
+              </div>
+              
+              {/* 右侧金额 */}
+              <div className="flex-shrink-0 ml-3">
                 <span className="font-semibold text-lg text-gray-900">
                   ¥{bill.amount.toFixed(2)}
                 </span>
-                {bill.category && (
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                    {bill.category}
-                  </span>
-                )}
               </div>
             </div>
-            {bill.description && (
-              <p className="text-sm text-gray-600 mt-1 truncate">
-                {bill.description}
-              </p>
-            )}
           </div>
         </div>
       </CardContent>

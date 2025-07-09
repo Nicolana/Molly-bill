@@ -309,39 +309,43 @@ export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
             </div>
             
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <Card className={`max-w-xs lg:max-w-md relative py-0 ${
-                  message.type === 'user' 
-                    ? 'bg-blue-500 text-white' 
-                    : 'bg-gray-100'
-                }`}>
-                  <CardContent className="p-3">
-                    <p className="text-sm">{message.content}</p>
-                    {message.bills && message.bills.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        {message.bills.map((bill: BillCreate, index) => (
-                          <BillCard key={index} bill={bill} index={index} />
-                        ))}
-                      </div>
-                    )}
-                    <p className="text-xs opacity-70 mt-1">
-                      {dayjs(message.timestamp).locale('zh-cn').format('YYYY-MM-DD HH:mm:ss')}
-                    </p>
-                  </CardContent>
-                  
-                  {/* 删除按钮 */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteMessage(message.id)}
-                    className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </Card>
+              <div key={message.id} className="space-y-3">
+                {/* 消息卡片 */}
+                <div className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <Card className={`max-w-xs lg:max-w-md relative py-0 ${
+                    message.type === 'user' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-100'
+                  }`}>
+                    <CardContent className="p-3">
+                      <p className="text-sm">{message.content}</p>
+                      <p className="text-xs opacity-70 mt-1">
+                        {dayjs(message.timestamp).locale('zh-cn').format('YYYY-MM-DD HH:mm:ss')}
+                      </p>
+                    </CardContent>
+                    
+                    {/* 删除按钮 */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteMessage(message.id)}
+                      className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </Card>
+                </div>
+                
+                {/* 账单卡片 - 单独显示 */}
+                {message.bills && message.bills.length > 0 && (
+                  <div className="flex justify-start">
+                    <div className="max-w-xs lg:max-w-md space-y-2">
+                      {message.bills.map((bill: BillCreate, index) => (
+                        <BillCard key={index} bill={bill} index={index} />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </>
