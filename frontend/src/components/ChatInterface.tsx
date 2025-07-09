@@ -122,7 +122,6 @@ export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
 
     try {
       const response = await aiAPI.chat({ message: userMessage });
-      console.log(response.data);
       
       // 检查统一返回格式
       if (!response.data?.success) {

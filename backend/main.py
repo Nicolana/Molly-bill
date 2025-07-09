@@ -42,7 +42,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="邮箱已被注册")
     created_user = create_user(db=db, user=user)
-    return success_response(data=created_user, message="注册成功")
+    return success_response(data=created_user.model_dump(), message="注册成功")
 
 @app.post("/token", response_model=BaseResponse)
 async def login_for_access_token(login_data: LoginRequest, db: Session = Depends(get_db)):
@@ -242,6 +242,15 @@ async def chat(request: ChatRequest, current_user = Depends(get_current_user), d
                     # 确保账单类型存在，默认为支出
                     if "type" not in bill_data_with_date:
                         bill_data_with_date["type"] = BillType.EXPENSE
+                    else:
+                        # 将AI返回的字符串转换为枚举值
+                        type_str = bill_data_with_date["type"]
+                        if type_str == "expense":
+                            bill_data_with_date["type"] = BillType.EXPENSE
+                        elif type_str == "income":
+                            bill_data_with_date["type"] = BillType.INCOME
+                        else:
+                            bill_data_with_date["type"] = BillType.EXPENSE  # 默认支出
                     bill_create = BillCreate(**bill_data_with_date)
                     bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
                     bill_ids.append(bill.id)
@@ -288,6 +297,15 @@ async def chat(request: ChatRequest, current_user = Depends(get_current_user), d
                     # 确保账单类型存在，默认为支出
                     if "type" not in bill_data_with_date:
                         bill_data_with_date["type"] = BillType.EXPENSE
+                    else:
+                        # 将AI返回的字符串转换为枚举值
+                        type_str = bill_data_with_date["type"]
+                        if type_str == "expense":
+                            bill_data_with_date["type"] = BillType.EXPENSE
+                        elif type_str == "income":
+                            bill_data_with_date["type"] = BillType.INCOME
+                        else:
+                            bill_data_with_date["type"] = BillType.EXPENSE  # 默认支出
                     bill_create = BillCreate(**bill_data_with_date)
                     bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
                     
@@ -360,6 +378,15 @@ async def chat(request: ChatRequest, current_user = Depends(get_current_user), d
                     # 确保账单类型存在，默认为支出
                     if "type" not in bill_data_with_date:
                         bill_data_with_date["type"] = BillType.EXPENSE
+                    else:
+                        # 将AI返回的字符串转换为枚举值
+                        type_str = bill_data_with_date["type"]
+                        if type_str == "expense":
+                            bill_data_with_date["type"] = BillType.EXPENSE
+                        elif type_str == "income":
+                            bill_data_with_date["type"] = BillType.INCOME
+                        else:
+                            bill_data_with_date["type"] = BillType.EXPENSE  # 默认支出
                     bill_create = BillCreate(**bill_data_with_date)
                     bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
                     bill_ids.append(bill.id)

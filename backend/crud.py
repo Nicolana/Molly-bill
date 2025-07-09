@@ -35,7 +35,8 @@ def get_bills_count(db: Session, user_id: int):
     return db.query(Bill).filter(Bill.owner_id == user_id).count()
 
 def create_bill(db: Session, bill: BillCreate, user_id: int):
-    db_bill = Bill(**bill.dict(), owner_id=user_id)
+    print(bill)
+    db_bill = Bill(**bill.model_dump(), owner_id=user_id)
     db.add(db_bill)
     db.commit()
     db.refresh(db_bill)

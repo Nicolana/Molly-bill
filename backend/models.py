@@ -2,9 +2,9 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Tex
 from sqlalchemy.orm import relationship
 from database import Base
 import datetime
-import enum
+from enum import Enum as PyEnum
 
-class BillType(enum.Enum):
+class BillType(str, PyEnum):
     EXPENSE = "expense"  # 支出
     INCOME = "income"    # 收入
 

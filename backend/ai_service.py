@@ -19,32 +19,35 @@ class AIService:
     def analyze_text(self, text: str) -> Dict[str, Any]:
         """分析文本中的账单信息"""
         prompt = f"""
-        你是一个专业的记账助手。请仔细分析以下文本中的消费信息，提取金额、描述、分类等信息。
+        你是一个专业的记账助手。请仔细分析以下文本中的财务信息，提取金额、描述、分类等信息，并判断是收入还是支出。
 
         账单识别规则：
-        1. 任何提到花钱、消费、购买、花费等词汇的内容都可能是账单
-        2. 金额可以是数字+单位（如：18块、13元、35.5元等）
-        3. 描述应该简洁明了，如"午餐"、"咖啡"、"打车"等
-        4. 分类可以是：餐饮、交通、购物、娱乐、其他等
-        5. 如果文本中有多个消费项目，请识别所有提到的消费项目
+        1. 支出：任何提到花钱、消费、购买、花费、支付、付款等词汇的内容
+        2. 收入：任何提到赚钱、收入、工资、奖金、报销、退款、收款等词汇的内容
+        3. 金额可以是数字+单位（如：18块、13元、35.5元等）
+        4. 描述应该简洁明了，如"午餐"、"咖啡"、"打车"、"工资"、"奖金"等
+        5. 支出分类可以是：餐饮、交通、购物、娱乐、其他等
+        6. 收入分类可以是：工资、奖金、报销、退款、其他等
+        7. 如果文本中有多个财务项目，请识别所有提到的项目
 
-        如果文本包含消费信息，请以JSON格式返回：
+        如果文本包含财务信息，请以JSON格式返回：
         {{
             "has_bill": true,
             "bills": [
                 {{
                     "amount": 金额（数字）,
-                    "description": "消费描述",
+                    "type": "expense" 或 "income",
+                    "description": "描述",
                     "category": "分类"
                 }}
             ],
-            "message": "已识别到消费信息"
+            "message": "已识别到财务信息"
         }}
 
-        如果没有消费信息，返回：
+        如果没有财务信息，返回：
         {{
             "has_bill": false,
-            "message": "我没有识别到消费信息，请告诉我您花了多少钱，在什么地方消费的。"
+            "message": "我没有识别到财务信息，请告诉我您的收入或支出情况。"
         }}
 
         示例：
@@ -54,16 +57,38 @@ class AIService:
             "bills": [
                 {{
                     "amount": 18,
+                    "type": "expense",
                     "description": "午餐",
                     "category": "餐饮"
                 }},
                 {{
                     "amount": 13,
+                    "type": "expense",
                     "description": "咖啡",
                     "category": "餐饮"
                 }}
             ],
-            "message": "已识别到消费信息：午餐 ¥18，咖啡 ¥13"
+            "message": "已识别到支出信息：午餐 ¥18，咖啡 ¥13"
+        }}
+
+        输入："今天发了工资5000元，还有奖金1000元"
+        输出：{{
+            "has_bill": true,
+            "bills": [
+                {{
+                    "amount": 5000,
+                    "type": "income",
+                    "description": "工资",
+                    "category": "工资"
+                }},
+                {{
+                    "amount": 1000,
+                    "type": "income",
+                    "description": "奖金",
+                    "category": "奖金"
+                }}
+            ],
+            "message": "已识别到收入信息：工资 ¥5000，奖金 ¥1000"
         }}
 
         文本内容：{text}
@@ -82,6 +107,11 @@ class AIService:
                 # 尝试解析JSON响应
                 try:
                     result = json.loads(content)
+                    # 确保所有账单都有type字段，默认为expense
+                    if result.get("has_bill", False) and "bills" in result:
+                        for bill in result["bills"]:
+                            if "type" not in bill:
+                                bill["type"] = "expense"
                     return result
                 except json.JSONDecodeError:
                     # 如果不是JSON格式，返回默认响应
@@ -114,24 +144,30 @@ class AIService:
             img_base64 = base64.b64encode(buffered.getvalue()).decode()
             
             prompt = """
-            请分析这张图片中的账单信息，提取金额、商家名称、商品描述等信息。
-            如果包含账单信息，请以JSON格式返回，格式如下：
+            请分析这张图片中的财务信息，提取金额、商家名称、商品描述等信息，并判断是收入还是支出。
+            
+            判断规则：
+            1. 支出：收据、发票、消费小票、付款凭证等
+            2. 收入：工资条、奖金单、报销单、收款凭证等
+            
+            如果包含财务信息，请以JSON格式返回，格式如下：
             {
                 "has_bill": true,
                 "bills": [
                     {
                         "amount": 金额,
+                        "type": "expense" 或 "income",
                         "description": "描述",
                         "category": "分类"
                     }
                 ],
-                "message": "我识别出了以下账单信息："
+                "message": "我识别出了以下财务信息："
             }
             
-            如果没有账单信息，返回：
+            如果没有财务信息，返回：
             {
                 "has_bill": false,
-                "message": "抱歉，我没有从图片中识别出账单信息。"
+                "message": "抱歉，我没有从图片中识别出财务信息。"
             }
             """
             
@@ -150,6 +186,11 @@ class AIService:
                 content = response.output.choices[0].message.content[0].text
                 try:
                     result = json.loads(content)
+                    # 确保所有账单都有type字段，默认为expense
+                    if result.get("has_bill", False) and "bills" in result:
+                        for bill in result["bills"]:
+                            if "type" not in bill:
+                                bill["type"] = "expense"
                     return result
                 except json.JSONDecodeError:
                     return {
@@ -213,12 +254,11 @@ class AIService:
         """聊天对话"""
         # 首先尝试分析是否包含账单信息
         analysis = self.analyze_text(message)
-        print(analysis)
         
         if analysis.get("has_bill", False):
             bills = analysis.get("bills", [])
             return {
-                "message": analysis.get("message", "已识别到账单信息"),
+                "message": analysis.get("message", "已识别到财务信息"),
                 "bills": bills
             }
         else:
@@ -226,8 +266,9 @@ class AIService:
             prompt = f"""
             你是一个友好的AI记账助手。用户说：{message}
             
-            请用友好的语气回复，并询问是否需要帮助记录账单。
-            如果用户提到了支出或消费，请主动询问是否需要记录。
+            请用友好的语气回复，并询问是否需要帮助记录收入或支出。
+            如果用户提到了支出、消费、收入、工资等财务信息，请主动询问是否需要记录。
+            记住，财务信息包括收入和支出两种类型。
             """
             
             try:
