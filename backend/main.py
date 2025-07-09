@@ -66,34 +66,40 @@ async def login_for_access_token(login_data: LoginRequest, db: Session = Depends
     )
 
 @app.get("/bills/", response_model=PaginatedResponse)
-async def read_bills(skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def read_bills(skip: int = 0, limit: int = 100, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     bills = get_bills(db, user_id=current_user.id, skip=skip, limit=limit)
     # 这里可以添加获取总数的逻辑
     total = len(bills)  # 简化处理，实际应该查询总数
     return paginated_response(bills, total, skip, limit, "获取账单列表成功")
 
 @app.post("/bills/", response_model=BaseResponse)
-async def create_user_bill(bill: BillCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def create_user_bill(bill: BillCreate, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     created_bill = create_bill(db=db, bill=bill, user_id=current_user.id)
     return success_response(data=created_bill, message="账单创建成功")
 
 @app.delete("/bills/{bill_id}", response_model=BaseResponse)
-async def delete_user_bill(bill_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def delete_user_bill(bill_id: int, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     success = delete_bill(db=db, bill_id=bill_id, user_id=current_user.id)
     if not success:
         raise HTTPException(status_code=404, detail="账单不存在")
     return success_response(message="账单删除成功")
 
 @app.get("/me", response_model=BaseResponse)
-async def read_users_me(current_user: User = Depends(get_current_user)):
-    return success_response(data=current_user, message="获取用户信息成功")
+async def read_users_me(current_user = Depends(get_current_user)):
+    # 将SQLAlchemy模型转换为Pydantic模型
+    user_data = User(
+        id=current_user.id,
+        email=current_user.email,
+        created_at=current_user.created_at
+    )
+    return success_response(data=user_data, message="获取用户信息成功")
 
 # 聊天消息相关端点
 @app.get("/chat/messages", response_model=ChatHistoryResponse)
 async def get_chat_history(
     skip: int = 0, 
     limit: int = 50, 
-    current_user: User = Depends(get_current_user), 
+    current_user = Depends(get_current_user), 
     db: Session = Depends(get_db)
 ):
     """获取聊天消息历史"""
@@ -104,7 +110,7 @@ async def get_chat_history(
 @app.get("/chat/messages/recent", response_model=List[ChatMessage])
 async def get_recent_messages(
     limit: int = 50,
-    current_user: User = Depends(get_current_user), 
+    current_user = Depends(get_current_user), 
     db: Session = Depends(get_db)
 ):
     """获取最近的聊天消息"""
@@ -113,7 +119,7 @@ async def get_recent_messages(
 @app.delete("/chat/messages/{message_id}")
 async def delete_message(
     message_id: int,
-    current_user: User = Depends(get_current_user), 
+    current_user = Depends(get_current_user), 
     db: Session = Depends(get_db)
 ):
     """删除聊天消息"""
@@ -124,7 +130,7 @@ async def delete_message(
 
 # AI相关端点
 @app.post("/ai/analyze", response_model=AIAnalysisResponse)
-async def analyze_input(request: AIAnalysisRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def analyze_input(request: AIAnalysisRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     """分析用户输入（文本、图片、音频）"""
     try:
         # 保存用户输入消息
@@ -291,7 +297,7 @@ async def analyze_input(request: AIAnalysisRequest, current_user: User = Depends
         raise HTTPException(status_code=500, detail=f"AI分析失败: {str(e)}")
 
 @app.post("/ai/voice", response_model=VoiceRecognitionResponse)
-async def recognize_voice(request: VoiceRecognitionRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def recognize_voice(request: VoiceRecognitionRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     """语音识别"""
     try:
         result = ai_service.recognize_voice(request.audio)
@@ -306,7 +312,7 @@ async def recognize_voice(request: VoiceRecognitionRequest, current_user: User =
         raise HTTPException(status_code=500, detail=f"语音识别失败: {str(e)}")
 
 @app.post("/ai/image", response_model=ImageAnalysisResponse)
-async def analyze_image(request: ImageAnalysisRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def analyze_image(request: ImageAnalysisRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     """图片分析"""
     try:
         result = ai_service.analyze_image(request.image)
@@ -324,7 +330,7 @@ async def analyze_image(request: ImageAnalysisRequest, current_user: User = Depe
         raise HTTPException(status_code=500, detail=f"图片分析失败: {str(e)}")
 
 @app.post("/ai/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def chat(request: ChatRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     """聊天对话"""
     try:
         # 保存用户消息

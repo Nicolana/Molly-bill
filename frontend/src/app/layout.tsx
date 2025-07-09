@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import AuthProvider from "@/components/AuthProvider";
+import TopNavigation from "@/components/TopNavigation";
 import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ErrorBoundary>
           <AuthProvider>
+            <TopNavigation />
             {children}
           </AuthProvider>
         </ErrorBoundary>
