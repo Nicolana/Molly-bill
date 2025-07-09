@@ -81,8 +81,15 @@ async def read_bills(skip: int = 0, limit: int = 100, current_user = Depends(get
     
     # 获取总数
     total = get_bills_count(db, user_id=current_user.id)
-    paginated_data = paginated_response(bill_schemas, total, skip, limit, "获取账单列表成功")
-    return success_response(data=paginated_data, message="获取账单列表成功")
+    return success_response(
+        data={
+            "data": bill_schemas,
+            "total": total,
+            "skip": skip,
+            "limit": limit
+        },
+        message="获取账单列表成功"
+    )
 
 
 
@@ -90,7 +97,7 @@ async def read_bills(skip: int = 0, limit: int = 100, current_user = Depends(get
 async def delete_user_bill(bill_id: int, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     success = delete_bill(db=db, bill_id=bill_id, user_id=current_user.id)
     if not success:
-        raise HTTPException(status_code=404, detail="账单不存在")
+        return error_response("账单不存在", "BILL_NOT_FOUND")
     return success_response(message="账单删除成功")
 
 @app.get("/me", response_model=BaseResponse)
@@ -104,7 +111,7 @@ async def read_users_me(current_user = Depends(get_current_user)):
     return success_response(data=user_data, message="获取用户信息成功")
 
 # 聊天消息相关端点
-@app.get("/chat/messages", response_model=ChatHistoryResponse)
+@app.get("/chat/messages", response_model=BaseResponse)
 async def get_chat_history(
     skip: int = 0, 
     limit: int = 50, 
@@ -114,18 +121,61 @@ async def get_chat_history(
     """获取聊天消息历史"""
     messages = get_chat_messages(db, user_id=current_user.id, skip=skip, limit=limit)
     total = get_chat_messages_count(db, user_id=current_user.id)
-    return ChatHistoryResponse(messages=messages, total=total)
+    
+    # 将SQLAlchemy模型转换为Pydantic模型
+    message_schemas = []
+    for message in messages:
+        message_schema = ChatMessage(
+            id=message.id,
+            content=message.content,
+            message_type=message.message_type,
+            input_type=message.input_type,
+            ai_confidence=message.ai_confidence,
+            timestamp=message.timestamp,
+            user_id=message.user_id,
+            bill_id=message.bill_id,
+            is_processed=message.is_processed
+        )
+        message_schemas.append(message_schema)
+    
+    return success_response(
+        data={
+            "data": message_schemas,
+            "total": total,
+            "skip": skip,
+            "limit": limit
+        },
+        message="获取聊天消息历史成功"
+    )
 
-@app.get("/chat/messages/recent", response_model=List[ChatMessage])
+@app.get("/chat/messages/recent", response_model=BaseResponse)
 async def get_recent_messages(
     limit: int = 50,
     current_user = Depends(get_current_user), 
     db: Session = Depends(get_db)
 ):
     """获取最近的聊天消息"""
-    return get_recent_chat_messages(db, user_id=current_user.id, limit=limit)
+    messages = get_recent_chat_messages(db, user_id=current_user.id, limit=limit)
+    
+    # 将SQLAlchemy模型转换为Pydantic模型
+    message_schemas = []
+    for message in messages:
+        message_schema = ChatMessage(
+            id=message.id,
+            content=message.content,
+            message_type=message.message_type,
+            input_type=message.input_type,
+            ai_confidence=message.ai_confidence,
+            timestamp=message.timestamp,
+            user_id=message.user_id,
+            bill_id=message.bill_id,
+            is_processed=message.is_processed
+        )
+        message_schemas.append(message_schema)
+    
+    return success_response(data=message_schemas, message="获取最近聊天消息成功")
 
-@app.delete("/chat/messages/{message_id}")
+@app.delete("/chat/messages/{message_id}", response_model=BaseResponse)
 async def delete_message(
     message_id: int,
     current_user = Depends(get_current_user), 
@@ -134,14 +184,14 @@ async def delete_message(
     """删除聊天消息"""
     success = delete_chat_message(db, message_id=message_id, user_id=current_user.id)
     if not success:
-        raise HTTPException(status_code=404, detail="消息不存在或无权限删除")
-    return {"message": "消息已删除"}
+        return error_response("消息不存在或无权限删除", "MESSAGE_NOT_FOUND")
+    return success_response(message="消息已删除")
 
 # AI聊天端点
 
 
 
-@app.post("/ai/chat", response_model=ChatResponse)
+@app.post("/ai/chat", response_model=BaseResponse)
 async def chat(request: ChatRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     """聊天对话（支持文本、语音、图片）"""
     try:
@@ -193,10 +243,13 @@ async def chat(request: ChatRequest, current_user = Depends(get_current_user), d
                 bill_id=bill_ids[0] if bill_ids else None
             )
             
-            return ChatResponse(
-                message=message_content,
-                bills=bills,
-                confidence=confidence
+            return success_response(
+                data={
+                    "message": message_content,
+                    "bills": bills,
+                    "confidence": confidence
+                },
+                message="图片分析完成"
             )
             
         elif request.audio:
@@ -244,10 +297,13 @@ async def chat(request: ChatRequest, current_user = Depends(get_current_user), d
                         user_id=current_user.id
                     )
                 
-                return ChatResponse(
-                    message=message_content,
-                    bills=bills,
-                    confidence=confidence
+                return success_response(
+                    data={
+                        "message": message_content,
+                        "bills": bills,
+                        "confidence": confidence
+                    },
+                    message="语音识别完成"
                 )
             else:
                 # 语音识别失败
@@ -262,10 +318,14 @@ async def chat(request: ChatRequest, current_user = Depends(get_current_user), d
                     ),
                     user_id=current_user.id
                 )
-                return ChatResponse(
+                return error_response(
                     message=error_message,
-                    bills=[],
-                    confidence=0.0
+                    error_code="VOICE_RECOGNITION_FAILED",
+                    data={
+                        "message": error_message,
+                        "bills": [],
+                        "confidence": 0.0
+                    }
                 )
         else:
             # 纯文本聊天
@@ -295,10 +355,16 @@ async def chat(request: ChatRequest, current_user = Depends(get_current_user), d
                 bill_id=bill_ids[0] if bill_ids else None
             )
             
-            return ChatResponse(
-                message=result.get("message", ""),
-                bills=bills,
-                confidence=confidence
+            return success_response(
+                data={
+                    "message": result.get("message", ""),
+                    "bills": bills,
+                    "confidence": confidence
+                },
+                message="聊天回复完成"
             )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"聊天失败: {str(e)}") 
+        return error_response(
+            message=f"聊天失败: {str(e)}",
+            error_code="CHAT_ERROR"
+        ) 

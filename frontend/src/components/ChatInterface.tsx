@@ -24,7 +24,13 @@ export default function ChatInterface() {
     try {
       setIsLoadingHistory(true);
       const response = await chatAPI.getRecentMessages(100);
-      const dbMessages = response.data?.data || [];
+      
+      // 检查统一返回格式
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || '加载聊天历史失败');
+      }
+      
+      const dbMessages = response.data.data || [];
       
       // 转换数据库消息格式为前端格式
       const convertedMessages: ChatMessage[] = dbMessages.map((dbMsg: any) => ({
@@ -34,6 +40,8 @@ export default function ChatInterface() {
         timestamp: new Date(dbMsg.timestamp),
         bill: undefined // 暂时不处理账单关联，可以后续优化
       }));
+
+      console.log(convertedMessages);
       
       setMessages(convertedMessages);
       // 使用 requestAnimationFrame 确保在DOM更新后设置滚动位置
@@ -103,6 +111,12 @@ export default function ChatInterface() {
     try {
       const response = await aiAPI.chat({ message: userMessage });
       console.log(response.data);
+      
+      // 检查统一返回格式
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || '聊天失败');
+      }
+      
       const { message, bills } = response.data.data || {};
       console.log(bills);
 
@@ -163,6 +177,12 @@ export default function ChatInterface() {
         message: '语音输入', 
         audio: audioData 
       });
+      
+      // 检查统一返回格式
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || '语音识别失败');
+      }
+      
       const { message, bills } = response.data.data || {};
       
       if (message) {
@@ -199,6 +219,12 @@ export default function ChatInterface() {
         message: '图片分析', 
         image: imageData 
       });
+      
+      // 检查统一返回格式
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || '图片分析失败');
+      }
+      
       const { message, bills } = response.data.data || {};
       
       if (message) {
@@ -217,7 +243,13 @@ export default function ChatInterface() {
   // 删除消息
   const deleteMessage = async (messageId: string) => {
     try {
-      await chatAPI.deleteMessage(parseInt(messageId));
+      const response = await chatAPI.deleteMessage(parseInt(messageId));
+      
+      // 检查统一返回格式
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || '删除消息失败');
+      }
+      
       setMessages(prev => prev.filter(msg => msg.id !== messageId));
     } catch (error) {
       console.error('删除消息失败:', error);
@@ -269,7 +301,7 @@ export default function ChatInterface() {
                 key={message.id}
                 className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <Card className={`max-w-xs lg:max-w-md relative ${
+                <Card className={`max-w-xs lg:max-w-md relative py-0 ${
                   message.type === 'user' 
                     ? 'bg-blue-500 text-white' 
                     : 'bg-gray-100'

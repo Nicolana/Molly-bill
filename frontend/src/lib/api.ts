@@ -32,12 +32,9 @@ const api = axios.create({
 // 请求拦截器：添加token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  console.log('请求拦截器 - 当前token:', token);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log('已添加Authorization头:', config.headers.Authorization);
   }
-  console.log('请求配置:', config);
   return config;
 }, (error) => {
   console.error('请求拦截器错误:', error);
@@ -47,13 +44,11 @@ api.interceptors.request.use((config) => {
 // 响应拦截器：处理错误
 api.interceptors.response.use(
   (response) => {
-    console.log('响应成功:', response.status, response.data);
     return response;
   },
   (error: AxiosError) => {
     console.error('响应错误:', error.response?.status, error.response?.data);
     if (error.response?.status === 401) {
-      console.log('Token 无效，清除本地存储并跳转到登录页');
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
@@ -88,7 +83,7 @@ export const billsAPI = {
 export const chatAPI = {
   // 获取聊天历史
   getChatHistory: (skip: number = 0, limit: number = 50) => 
-    api.get<BaseResponse<ChatHistoryResponse>>(`/chat/messages?skip=${skip}&limit=${limit}`),
+    api.get<BaseResponse<PaginatedResponse<DBChatMessage>>>(`/chat/messages?skip=${skip}&limit=${limit}`),
   
   // 获取最近的聊天消息
   getRecentMessages: (limit: number = 50) => 
@@ -102,7 +97,11 @@ export const chatAPI = {
 // AI记账助手相关API
 export const aiAPI = {
   // 统一的聊天接口（支持文本、语音、图片）
-  chat: (data: ChatRequest) => api.post<BaseResponse<ChatResponse>>('/ai/chat', data),
+  chat: (data: ChatRequest) => api.post<BaseResponse<{
+    message: string;
+    bills?: BillCreate[];
+    confidence?: number;
+  }>>('/ai/chat', data),
 };
 
 export default api; 
