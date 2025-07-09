@@ -7,6 +7,7 @@ export interface User {
 export interface Bill {
   id: number;
   amount: number;
+  type: 'expense' | 'income';
   category?: string;
   description?: string;
   date: string;

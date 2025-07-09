@@ -75,7 +75,9 @@ export default function DashboardPage() {
   // 按分类统计
   const categoryStats = bills.reduce((stats, bill) => {
     const category = bill.category || '未分类';
-    stats[category] = (stats[category] || 0) + bill.amount;
+    const type = bill.type === 'income' ? '收入' : '支出';
+    const key = `${type}-${category}`;
+    stats[key] = (stats[key] || 0) + bill.amount;
     return stats;
   }, {} as Record<string, number>);
 
@@ -94,11 +96,13 @@ export default function DashboardPage() {
         return billDate.isSame(dayStart, 'day') || (billDate.isAfter(dayStart) && billDate.isBefore(dayEnd));
       });
       
-      const dayTotal = dayBills.reduce((sum, bill) => sum + bill.amount, 0);
+      const dayIncome = dayBills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0);
+      const dayExpense = dayBills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0);
       
       data.push({
         date: date.format('MM/DD'),
-        amount: dayTotal,
+        income: dayIncome,
+        expense: dayExpense,
         count: dayBills.length
       });
     }
@@ -163,13 +167,37 @@ export default function DashboardPage() {
           <div className="w-1/2 overflow-auto">
             <div className="p-6 space-y-6">
               {/* 统计卡片 */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-600">总收入</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">
+                      ¥{bills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
+                    </div>
+                  </CardContent>
+                </Card>
+                
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-gray-600">总支出</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-red-600">¥{totalAmount.toFixed(2)}</div>
+                    <div className="text-2xl font-bold text-red-600">
+                      ¥{bills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-600">净收入</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${totalAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ¥{totalAmount.toFixed(2)}
+                    </div>
                   </CardContent>
                 </Card>
                 
@@ -181,19 +209,10 @@ export default function DashboardPage() {
                     <div className="text-2xl font-bold text-blue-600">{totalCount}</div>
                   </CardContent>
                 </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">平均支出</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">¥{averageAmount.toFixed(2)}</div>
-                  </CardContent>
-                </Card>
               </div>
 
               {/* 图表和账单列表标签页 */}
-              <Tabs defaultValue="chart" className="w-full">
+              <Tabs defaultValue="bills" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="chart" className="flex items-center space-x-2">
                     <TrendingUp className="h-4 w-4" />
@@ -217,7 +236,7 @@ export default function DashboardPage() {
                   <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between">
-                        <CardTitle>支出趋势</CardTitle>
+                        <CardTitle>收支趋势</CardTitle>
                         <div className="flex space-x-2">
                           <Button
                             variant={dateRange === '7d' ? 'default' : 'outline'}
@@ -251,7 +270,8 @@ export default function DashboardPage() {
                             <XAxis dataKey="date" />
                             <YAxis />
                             <Tooltip formatter={(value) => [`¥${value}`, '金额']} />
-                            <Line type="monotone" dataKey="amount" stroke="#8884d8" strokeWidth={2} />
+                            <Line type="monotone" dataKey="income" stroke="#10b981" strokeWidth={2} name="收入" />
+                            <Line type="monotone" dataKey="expense" stroke="#ef4444" strokeWidth={2} name="支出" />
                           </LineChart>
                         </ResponsiveContainer>
                       </div>
@@ -310,9 +330,14 @@ export default function DashboardPage() {
                             onChange={(e) => setSelectedDate(new Date(e.target.value))}
                             className="px-3 py-1 border rounded-md text-sm"
                           />
-                          <span className="text-sm text-gray-600">
-                            当日支出: ¥{selectedDateTotal.toFixed(2)}
-                          </span>
+                          <div className="text-sm text-gray-600 space-x-4">
+                            <span className="text-green-600">
+                              收入: ¥{selectedDateBills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
+                            </span>
+                            <span className="text-red-600">
+                              支出: ¥{selectedDateBills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </CardHeader>
@@ -330,7 +355,16 @@ export default function DashboardPage() {
                             >
                               <div className="flex-1">
                                 <div className="flex items-center space-x-2">
-                                  <span className="font-medium">¥{bill.amount.toFixed(2)}</span>
+                                  <span className={`font-medium ${bill.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {bill.type === 'income' ? '+' : '-'}¥{bill.amount.toFixed(2)}
+                                  </span>
+                                  <span className={`text-xs px-2 py-1 rounded ${
+                                    bill.type === 'income' 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {bill.type === 'income' ? '收入' : '支出'}
+                                  </span>
                                   {bill.category && (
                                     <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                                       {bill.category}
