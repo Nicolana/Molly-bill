@@ -7,4 +7,7 @@ openai
 dashscope
 python-multipart
 Pillow
-pydub 
+pydub
+passlib[bcrypt]
+python-jose[cryptography]
+bcrypt==4.0.1 

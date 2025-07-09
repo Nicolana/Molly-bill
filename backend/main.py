@@ -7,10 +7,16 @@ from datetime import timedelta, datetime
 
 from database import engine
 from models import Base
-from schemas import User, UserCreate, Bill, BillCreate, Token, AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionRequest, VoiceRecognitionResponse, ImageAnalysisRequest, ImageAnalysisResponse, ChatRequest, ChatResponse, ChatMessage, ChatHistoryResponse, ChatMessageCreate
+from schemas import (
+    User, UserCreate, Bill, BillCreate, Token, BaseResponse, PaginatedResponse,
+    AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionRequest, VoiceRecognitionResponse, 
+    ImageAnalysisRequest, ImageAnalysisResponse, ChatRequest, ChatResponse, 
+    ChatMessage, ChatHistoryResponse, ChatMessageCreate
+)
 from crud import create_user, get_user_by_email, verify_password, get_bills, create_bill, delete_bill, create_chat_message, get_chat_messages, get_chat_messages_count, get_recent_chat_messages, delete_chat_message
 from deps import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES, get_db
 from ai_service import ai_service
+from utils import success_response, error_response, paginated_response
 
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
@@ -25,22 +31,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
+@app.get("/", response_model=BaseResponse)
 def read_root():
-    return {"msg": "Molly Bill API 在线"}
+    return success_response(data={"msg": "Molly Bill API 在线"}, message="API服务正常")
 
-@app.get("/health")
+@app.get("/health", response_model=BaseResponse)
 def health_check():
-    return {"status": "ok"}
+    return success_response(data={"status": "ok"}, message="健康检查通过")
 
-@app.post("/register", response_model=User)
+@app.post("/register", response_model=BaseResponse)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     db_user = get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="邮箱已被注册")
-    return create_user(db=db, user=user)
+    created_user = create_user(db=db, user=user)
+    return success_response(data=created_user, message="注册成功")
 
-@app.post("/token", response_model=Token)
+@app.post("/token", response_model=BaseResponse)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = get_user_by_email(db, email=form_data.username)
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -53,27 +60,34 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    print(access_token)
+    return success_response(
+        data={"access_token": access_token, "token_type": "bearer"}, 
+        message="登录成功"
+    )
 
-@app.get("/bills/", response_model=List[Bill])
+@app.get("/bills/", response_model=PaginatedResponse)
 async def read_bills(skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     bills = get_bills(db, user_id=current_user.id, skip=skip, limit=limit)
-    return bills
+    # 这里可以添加获取总数的逻辑
+    total = len(bills)  # 简化处理，实际应该查询总数
+    return paginated_response(bills, total, skip, limit, "获取账单列表成功")
 
-@app.post("/bills/", response_model=Bill)
+@app.post("/bills/", response_model=BaseResponse)
 async def create_user_bill(bill: BillCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return create_bill(db=db, bill=bill, user_id=current_user.id)
+    created_bill = create_bill(db=db, bill=bill, user_id=current_user.id)
+    return success_response(data=created_bill, message="账单创建成功")
 
-@app.delete("/bills/{bill_id}")
+@app.delete("/bills/{bill_id}", response_model=BaseResponse)
 async def delete_user_bill(bill_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     success = delete_bill(db=db, bill_id=bill_id, user_id=current_user.id)
     if not success:
         raise HTTPException(status_code=404, detail="账单不存在")
-    return {"message": "账单已删除"}
+    return success_response(message="账单删除成功")
 
-@app.get("/me", response_model=User)
+@app.get("/me", response_model=BaseResponse)
 async def read_users_me(current_user: User = Depends(get_current_user)):
-    return current_user
+    return success_response(data=current_user, message="获取用户信息成功")
 
 # 聊天消息相关端点
 @app.get("/chat/messages", response_model=ChatHistoryResponse)

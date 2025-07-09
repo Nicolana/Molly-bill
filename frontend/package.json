@@ -33,6 +33,7 @@
     "@types/node": "^20.19.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "code-inspector-plugin": "^0.20.14-beta.1",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
     "tailwindcss": "^4",

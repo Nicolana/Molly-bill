@@ -8,6 +8,8 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // 添加超时设置
+  timeout: 10000,
 });
 
 // 请求拦截器：添加token
@@ -20,13 +22,21 @@ api.interceptors.request.use((config) => {
   }
   console.log('请求配置:', config);
   return config;
+}, (error) => {
+  console.error('请求拦截器错误:', error);
+  return Promise.reject(error);
 });
 
 // 响应拦截器：处理错误
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('响应成功:', response.status, response.data);
+    return response;
+  },
   (error: AxiosError) => {
+    console.error('响应错误:', error.response?.status, error.response?.data);
     if (error.response?.status === 401) {
+      console.log('Token 无效，清除本地存储并跳转到登录页');
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
@@ -42,6 +52,8 @@ export const authAPI = {
     const formData = new URLSearchParams();
     formData.append('username', data.email); // OAuth2PasswordRequestForm期望username字段
     formData.append('password', data.password);
+    
+    console.log('登录请求数据:', formData.toString());
     
     return api.post<AuthResponse>('/token', formData, {
       headers: {
