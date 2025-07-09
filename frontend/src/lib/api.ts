@@ -1,6 +1,23 @@
 import axios, { AxiosError } from 'axios';
 import { User, Bill, BillCreate, AuthResponse, LoginForm, RegisterForm, AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionResult, ImageAnalysisResult, DBChatMessage, ChatHistoryResponse } from '@/types';
 
+// 统一响应格式接口
+interface BaseResponse<T = any> {
+  success: boolean;
+  message: string;
+  data?: T;
+  error_code?: string;
+}
+
+interface PaginatedResponse<T = any> {
+  success: boolean;
+  message: string;
+  data: T[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const api = axios.create({
@@ -46,7 +63,7 @@ api.interceptors.response.use(
 
 // 认证相关API
 export const authAPI = {
-  register: (data: RegisterForm) => api.post<User>('/register', data),
+  register: (data: RegisterForm) => api.post<BaseResponse<User>>('/register', data),
   login: (data: LoginForm) => {
     // 将JSON数据转换为表单数据格式
     const formData = new URLSearchParams();
@@ -55,50 +72,50 @@ export const authAPI = {
     
     console.log('登录请求数据:', formData.toString());
     
-    return api.post<AuthResponse>('/token', formData, {
+    return api.post<BaseResponse<AuthResponse>>('/token', formData, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
     });
   },
-  getMe: () => api.get<User>('/me'),
+  getMe: () => api.get<BaseResponse<User>>('/me'),
 };
 
 // 账单相关API
 export const billsAPI = {
-  getBills: () => api.get<Bill[]>('/bills/'),
-  createBill: (data: BillCreate) => api.post<Bill>('/bills/', data),
-  deleteBill: (id: number) => api.delete(`/bills/${id}`),
+  getBills: () => api.get<PaginatedResponse<Bill>>('/bills/'),
+  createBill: (data: BillCreate) => api.post<BaseResponse<Bill>>('/bills/', data),
+  deleteBill: (id: number) => api.delete<BaseResponse>(`/bills/${id}`),
 };
 
 // 聊天消息相关API
 export const chatAPI = {
   // 获取聊天历史
   getChatHistory: (skip: number = 0, limit: number = 50) => 
-    api.get<ChatHistoryResponse>(`/chat/messages?skip=${skip}&limit=${limit}`),
+    api.get<BaseResponse<ChatHistoryResponse>>(`/chat/messages?skip=${skip}&limit=${limit}`),
   
   // 获取最近的聊天消息
   getRecentMessages: (limit: number = 50) => 
-    api.get<DBChatMessage[]>(`/chat/messages/recent?limit=${limit}`),
+    api.get<BaseResponse<DBChatMessage[]>>(`/chat/messages/recent?limit=${limit}`),
   
   // 删除聊天消息
   deleteMessage: (messageId: number) => 
-    api.delete(`/chat/messages/${messageId}`),
+    api.delete<BaseResponse>(`/chat/messages/${messageId}`),
 };
 
 // AI记账助手相关API
 export const aiAPI = {
   // 分析用户输入（文本、图片、音频）
-  analyzeInput: (data: AIAnalysisRequest) => api.post<AIAnalysisResponse>('/ai/analyze', data),
+  analyzeInput: (data: AIAnalysisRequest) => api.post<BaseResponse<AIAnalysisResponse>>('/ai/analyze', data),
   
   // 语音识别
-  recognizeVoice: (audioData: string) => api.post<VoiceRecognitionResult>('/ai/voice', { audio: audioData }),
+  recognizeVoice: (audioData: string) => api.post<BaseResponse<VoiceRecognitionResult>>('/ai/voice', { audio: audioData }),
   
   // 图片分析
-  analyzeImage: (imageData: string) => api.post<ImageAnalysisResult>('/ai/image', { image: imageData }),
+  analyzeImage: (imageData: string) => api.post<BaseResponse<ImageAnalysisResult>>('/ai/image', { image: imageData }),
   
   // 聊天对话
-  chat: (message: string) => api.post<AIAnalysisResponse>('/ai/chat', { message }),
+  chat: (message: string) => api.post<BaseResponse<AIAnalysisResponse>>('/ai/chat', { message }),
 };
 
 export default api; 

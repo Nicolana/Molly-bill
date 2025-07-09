@@ -29,7 +29,16 @@ export default function LoginPage() {
       console.log('登录响应:', response);
       console.log('响应数据:', response.data);
       
-      const { access_token } = response.data;
+      if (!response.data.success) {
+        throw new Error(response.data.message || '登录失败');
+      }
+      
+      const authData = response.data.data;
+      if (!authData || !authData.access_token) {
+        throw new Error('登录响应数据格式错误');
+      }
+      
+      const { access_token } = authData;
       console.log('获取到的token:', access_token);
       
       // 获取用户信息
@@ -37,7 +46,16 @@ export default function LoginPage() {
       const userResponse = await authAPI.getMe();
       console.log('用户信息响应:', userResponse);
       
-      login(access_token, userResponse.data);
+      if (!userResponse.data.success) {
+        throw new Error(userResponse.data.message || '获取用户信息失败');
+      }
+      
+      const userData = userResponse.data.data;
+      if (!userData) {
+        throw new Error('用户信息数据格式错误');
+      }
+      
+      login(access_token, userData);
       console.log('登录成功，跳转到dashboard');
       
       router.push('/dashboard');
