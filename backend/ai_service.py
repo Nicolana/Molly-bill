@@ -73,7 +73,8 @@ class AIService:
             response = dashscope.Generation.call(
                 model='qwen-plus',
                 prompt=prompt,
-                result_format='message'
+                result_format='message',
+                response_format={"type": "json_object"}
             )
             
             if response.status_code == 200:
