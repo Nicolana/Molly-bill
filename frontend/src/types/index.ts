@@ -62,24 +62,17 @@ export interface ChatHistoryResponse {
   total: number;
 }
 
-export interface AIAnalysisRequest {
+// 统一的聊天请求和响应类型
+export interface ChatRequest {
   message: string;
   image?: string; // base64编码的图片
   audio?: string; // base64编码的音频
 }
 
-export interface AIAnalysisResponse {
+export interface ChatResponse {
   message: string;
   bills?: BillCreate[];
-  confidence: number;
+  confidence?: number;
 }
 
-export interface VoiceRecognitionResult {
-  text: string;
-  confidence: number;
-}
-
-export interface ImageAnalysisResult {
-  text: string;
-  bills: BillCreate[];
-} 
+ 

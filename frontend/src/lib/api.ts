@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { User, Bill, BillCreate, AuthResponse, LoginForm, RegisterForm, AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionResult, ImageAnalysisResult, DBChatMessage, ChatHistoryResponse } from '@/types';
+import { User, Bill, BillCreate, AuthResponse, LoginForm, RegisterForm, ChatRequest, ChatResponse, DBChatMessage, ChatHistoryResponse } from '@/types';
 
 // 统一响应格式接口
 interface BaseResponse<T = unknown> {
@@ -101,17 +101,8 @@ export const chatAPI = {
 
 // AI记账助手相关API
 export const aiAPI = {
-  // 分析用户输入（文本、图片、音频）
-  analyzeInput: (data: AIAnalysisRequest) => api.post<BaseResponse<AIAnalysisResponse>>('/ai/analyze', data),
-  
-  // 语音识别
-  recognizeVoice: (audioData: string) => api.post<BaseResponse<VoiceRecognitionResult>>('/ai/voice', { audio: audioData }),
-  
-  // 图片分析
-  analyzeImage: (imageData: string) => api.post<BaseResponse<ImageAnalysisResult>>('/ai/image', { image: imageData }),
-  
-  // 聊天对话
-  chat: (message: string) => api.post<BaseResponse<AIAnalysisResponse>>('/ai/chat', { message }),
+  // 统一的聊天接口（支持文本、语音、图片）
+  chat: (data: ChatRequest) => api.post<BaseResponse<ChatResponse>>('/ai/chat', data),
 };
 
 export default api; 

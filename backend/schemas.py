@@ -85,34 +85,13 @@ class ChatHistoryResponse(BaseModel):
     messages: List[ChatMessage]
     total: int
 
-# AI相关模型
-class AIAnalysisRequest(BaseModel):
+# AI聊天相关模型
+class ChatRequest(BaseModel):
     message: str
     image: Optional[str] = None  # base64编码的图片
     audio: Optional[str] = None  # base64编码的音频
 
-class AIAnalysisResponse(BaseModel):
-    message: str
-    bill: Optional[BillCreate] = None
-    confidence: Optional[float] = None
-
-class VoiceRecognitionRequest(BaseModel):
-    audio: str  # base64编码的音频
-
-class VoiceRecognitionResponse(BaseModel):
-    text: str
-    confidence: float
-
-class ImageAnalysisRequest(BaseModel):
-    image: str  # base64编码的图片
-
-class ImageAnalysisResponse(BaseModel):
-    text: str
-    bills: List[BillCreate]
-
-class ChatRequest(BaseModel):
-    message: str
-
 class ChatResponse(BaseModel):
     message: str
-    bills: Optional[List[BillCreate]] = None 
+    bills: Optional[List[BillCreate]] = None
+    confidence: Optional[float] = None 

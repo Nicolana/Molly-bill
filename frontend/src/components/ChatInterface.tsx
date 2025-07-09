@@ -24,10 +24,10 @@ export default function ChatInterface() {
     try {
       setIsLoadingHistory(true);
       const response = await chatAPI.getRecentMessages(100);
-      const dbMessages = response.data;
+      const dbMessages = response.data?.data || [];
       
       // 转换数据库消息格式为前端格式
-      const convertedMessages: ChatMessage[] = dbMessages.map(dbMsg => ({
+      const convertedMessages: ChatMessage[] = dbMessages.map((dbMsg: any) => ({
         id: dbMsg.id.toString(),
         type: dbMsg.message_type as 'user' | 'assistant',
         content: dbMsg.content,
@@ -36,10 +36,10 @@ export default function ChatInterface() {
       }));
       
       setMessages(convertedMessages);
-      // 在下一个渲染周期中设置滚动位置
-      setTimeout(() => {
+      // 使用 requestAnimationFrame 确保在DOM更新后设置滚动位置
+      requestAnimationFrame(() => {
         initializeScrollPosition();
-      }, 0);
+      });
     } catch (error) {
       console.error('加载聊天历史失败:', error);
     } finally {
@@ -56,7 +56,10 @@ export default function ChatInterface() {
   const initializeScrollPosition = () => {
     const messagesContainer = messagesEndRef.current?.parentElement;
     if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      // 使用 requestAnimationFrame 确保在下一帧执行，避免布局闪烁
+      requestAnimationFrame(() => {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      });
     }
   };
 
@@ -98,13 +101,13 @@ export default function ChatInterface() {
     addMessage(userMessage, 'user');
 
     try {
-      const response = await aiAPI.chat(userMessage);
+      const response = await aiAPI.chat({ message: userMessage });
       console.log(response.data);
-      const { message, bills } = response.data;
+      const { message, bills } = response.data.data || {};
       console.log(bills);
 
       // 添加AI回复到本地状态
-      addMessage(message, 'assistant', bills);
+      addMessage(message || '抱歉，我没有理解您的意思。', 'assistant', bills);
     } catch (error) {
       console.error('发送消息失败:', error);
       addMessage('抱歉，我遇到了一些问题，请稍后再试。', 'assistant');
@@ -156,14 +159,13 @@ export default function ChatInterface() {
   const processVoiceInput = async (audioData: string) => {
     setIsLoading(true);
     try {
-      const response = await aiAPI.recognizeVoice(audioData);
-      const { text } = response.data;
+      const response = await aiAPI.chat({ 
+        message: '语音输入', 
+        audio: audioData 
+      });
+      const { message, bills } = response.data.data || {};
       
-      if (text) {
-        addMessage(`语音输入: ${text}`, 'user');
-        // 继续处理文本
-        const aiResponse = await aiAPI.chat(text);
-        const { message, bills } = aiResponse.data;
+      if (message) {
         addMessage(message, 'assistant', bills);
       } else {
         addMessage('抱歉，我没有听清楚，请再说一遍。', 'assistant');
@@ -193,16 +195,14 @@ export default function ChatInterface() {
   const processImageInput = async (imageData: string) => {
     setIsLoading(true);
     try {
-      const response = await aiAPI.analyzeImage(imageData);
-      const { text, bills } = response.data;
+      const response = await aiAPI.chat({ 
+        message: '图片分析', 
+        image: imageData 
+      });
+      const { message, bills } = response.data.data || {};
       
-      addMessage(`图片分析: ${text}`, 'user');
-      
-      if (bills && bills.length > 0) {
-        const message = `我识别出了以下账单信息：\n${bills.map(bill => 
-          `- ${bill.description || '未知项目'}: ¥${bill.amount}`
-        ).join('\n')}`;
-        addMessage(message, 'assistant');
+      if (message) {
+        addMessage(message, 'assistant', bills);
       } else {
         addMessage('抱歉，我没有从图片中识别出账单信息。', 'assistant');
       }
@@ -239,14 +239,14 @@ export default function ChatInterface() {
   return (
     <div className="flex flex-col h-full">
       {/* 聊天消息区域 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col justify-end">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {isLoadingHistory ? (
           <div className="flex justify-center items-center h-32">
             <Loader2 className="h-6 w-6 animate-spin" />
             <span className="ml-2">加载聊天记录...</span>
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-gray-500 mt-auto mb-auto">
+          <div className="text-center text-gray-500 mt-8">
             <p className="text-lg font-medium">欢迎使用AI记账助手！</p>
             <p className="text-sm mt-2">你可以通过文字、语音或图片来记录账单</p>
           </div>
@@ -278,7 +278,7 @@ export default function ChatInterface() {
                     <p className="text-sm">{message.content}</p>
                     {message.bills && message.bills.length > 0 && (
                       <div className="mt-2 p-2 bg-white bg-opacity-20 rounded text-xs">
-                        {message.bills.map((bill, index) => (
+                        {message.bills.map((bill: BillCreate, index) => (
                           <div key={index} className="mb-1">
                             <p>识别到账单: ¥{bill.amount}</p>
                             {bill.description && <p>描述: {bill.description}</p>}

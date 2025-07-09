@@ -8,9 +8,7 @@ from database import engine
 from models import Base
 from schemas import (
     User, UserCreate, Bill, BillCreate, Token, BaseResponse, PaginatedResponse,
-    AIAnalysisRequest, AIAnalysisResponse, VoiceRecognitionRequest, VoiceRecognitionResponse, 
-    ImageAnalysisRequest, ImageAnalysisResponse, ChatRequest, ChatResponse, 
-    ChatMessage, ChatHistoryResponse, ChatMessageCreate, LoginRequest
+    ChatRequest, ChatResponse, ChatMessage, ChatHistoryResponse, ChatMessageCreate, LoginRequest
 )
 from crud import create_user, get_user_by_email, verify_password, get_bills, get_bills_count, create_bill, delete_bill, create_chat_message, get_chat_messages, get_chat_messages_count, get_recent_chat_messages, delete_chat_message
 from deps import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES, get_db
@@ -86,19 +84,7 @@ async def read_bills(skip: int = 0, limit: int = 100, current_user = Depends(get
     paginated_data = paginated_response(bill_schemas, total, skip, limit, "获取账单列表成功")
     return success_response(data=paginated_data, message="获取账单列表成功")
 
-@app.post("/bills/", response_model=BaseResponse)
-async def create_user_bill(bill: BillCreate, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
-    created_bill = create_bill(db=db, bill=bill, user_id=current_user.id)
-    # 将SQLAlchemy模型转换为Pydantic模型
-    bill_schema = Bill(
-        id=created_bill.id,
-        amount=created_bill.amount,
-        category=created_bill.category,
-        description=created_bill.description,
-        date=created_bill.date,
-        owner_id=created_bill.owner_id
-    )
-    return success_response(data=bill_schema, message="账单创建成功")
+
 
 @app.delete("/bills/{bill_id}", response_model=BaseResponse)
 async def delete_user_bill(bill_id: int, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -151,251 +137,168 @@ async def delete_message(
         raise HTTPException(status_code=404, detail="消息不存在或无权限删除")
     return {"message": "消息已删除"}
 
-# AI相关端点
-@app.post("/ai/analyze", response_model=AIAnalysisResponse)
-async def analyze_input(request: AIAnalysisRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
-    """分析用户输入（文本、图片、音频）"""
-    try:
-        # 保存用户输入消息
-        user_message = create_chat_message(
-            db=db,
-            message=ChatMessageCreate(
-                content=request.message,
-                message_type="user",
-                input_type="text" if not request.image and not request.audio else ("image" if request.image else "voice")
-            ),
-            user_id=current_user.id
-        )
-        
-        if request.image:
-            # 分析图片
-            result = ai_service.analyze_image(request.image)
-            if result.get("has_bill", False):
-                bills = result.get("bills", [])
-                if bills:
-                    # 创建账单
-                    bill = create_bill(db=db, bill=bills[0], user_id=current_user.id)
-                    # 保存AI回复并关联账单
-                    ai_message = create_chat_message(
-                        db=db,
-                        message=ChatMessageCreate(
-                            content=result.get("message", "识别到账单信息"),
-                            message_type="assistant",
-                            input_type="image",
-                            ai_confidence=0.9
-                        ),
-                        user_id=current_user.id,
-                        bill_id=bill.id
-                    )
-                    return AIAnalysisResponse(
-                        message=result.get("message", "识别到账单信息"),
-                        bill=bills[0],
-                        confidence=0.9
-                    )
-            
-            # 保存AI回复
-            ai_message = create_chat_message(
-                db=db,
-                message=ChatMessageCreate(
-                    content=result.get("message", "未识别到账单信息"),
-                    message_type="assistant",
-                    input_type="image",
-                    ai_confidence=0.0
-                ),
-                user_id=current_user.id
-            )
-            return AIAnalysisResponse(
-                message=result.get("message", "未识别到账单信息"),
-                bill=None,
-                confidence=0.0
-            )
-        elif request.audio:
-            # 语音识别
-            voice_result = ai_service.recognize_voice(request.audio)
-            if voice_result.get("success", False):
-                text = voice_result.get("text", "")
-                # 继续分析文本
-                text_result = ai_service.analyze_text(text)
-                if text_result.get("has_bill", False):
-                    bill_data = text_result.get("bill")
-                    # 创建账单
-                    bill_data_with_date = {**bill_data, "date": datetime.now()}
-                    bill_create = BillCreate(**bill_data_with_date)
-                    bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
-                    # 保存AI回复并关联账单
-                    ai_message = create_chat_message(
-                        db=db,
-                        message=ChatMessageCreate(
-                            content=f"语音识别：{text}\n{text_result.get('message', '')}",
-                            message_type="assistant",
-                            input_type="voice",
-                            ai_confidence=voice_result.get("confidence", 0.0)
-                        ),
-                        user_id=current_user.id,
-                        bill_id=bill.id
-                    )
-                    return AIAnalysisResponse(
-                        message=f"语音识别：{text}\n{text_result.get('message', '')}",
-                        bill=bill_data,
-                        confidence=voice_result.get("confidence", 0.0)
-                    )
-                
-                # 保存AI回复
-                ai_message = create_chat_message(
-                    db=db,
-                    message=ChatMessageCreate(
-                        content=f"语音识别：{text}\n{text_result.get('message', '')}",
-                        message_type="assistant",
-                        input_type="voice",
-                        ai_confidence=voice_result.get("confidence", 0.0)
-                    ),
-                    user_id=current_user.id
-                )
-                return AIAnalysisResponse(
-                    message=f"语音识别：{text}\n{text_result.get('message', '')}",
-                    bill=None,
-                    confidence=voice_result.get("confidence", 0.0)
-                )
-            else:
-                # 保存AI回复
-                ai_message = create_chat_message(
-                    db=db,
-                    message=ChatMessageCreate(
-                        content=voice_result.get("message", "语音识别失败"),
-                        message_type="assistant",
-                        input_type="voice",
-                        ai_confidence=0.0
-                    ),
-                    user_id=current_user.id
-                )
-                return AIAnalysisResponse(
-                    message=voice_result.get("message", "语音识别失败"),
-                    bill=None,
-                    confidence=0.0
-                )
-        else:
-            # 纯文本分析
-            result = ai_service.analyze_text(request.message)
-            if result.get("has_bill", False):
-                bill_data = result.get("bill")
-                # 创建账单
-                bill_data_with_date = {**bill_data, "date": datetime.now()}
-                bill_create = BillCreate(**bill_data_with_date)
-                bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
-                # 保存AI回复并关联账单
-                ai_message = create_chat_message(
-                    db=db,
-                    message=ChatMessageCreate(
-                        content=result.get("message", "识别到账单信息"),
-                        message_type="assistant",
-                        input_type="text",
-                        ai_confidence=0.9
-                    ),
-                    user_id=current_user.id,
-                    bill_id=bill.id
-                )
-                return AIAnalysisResponse(
-                    message=result.get("message", "识别到账单信息"),
-                    bill=bill_data,
-                    confidence=0.9
-                )
-            
-            # 保存AI回复
-            ai_message = create_chat_message(
-                db=db,
-                message=ChatMessageCreate(
-                    content=result.get("message", "未识别到账单信息"),
-                    message_type="assistant",
-                    input_type="text",
-                    ai_confidence=0.0
-                ),
-                user_id=current_user.id
-            )
-            return AIAnalysisResponse(
-                message=result.get("message", "未识别到账单信息"),
-                bill=None,
-                confidence=0.0
-            )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI分析失败: {str(e)}")
+# AI聊天端点
 
-@app.post("/ai/voice", response_model=VoiceRecognitionResponse)
-async def recognize_voice(request: VoiceRecognitionRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
-    """语音识别"""
-    try:
-        result = ai_service.recognize_voice(request.audio)
-        if result.get("success", False):
-            return VoiceRecognitionResponse(
-                text=result.get("text", ""),
-                confidence=result.get("confidence", 0.0)
-            )
-        else:
-            raise HTTPException(status_code=400, detail=result.get("message", "语音识别失败"))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"语音识别失败: {str(e)}")
 
-@app.post("/ai/image", response_model=ImageAnalysisResponse)
-async def analyze_image(request: ImageAnalysisRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
-    """图片分析"""
-    try:
-        result = ai_service.analyze_image(request.image)
-        if result.get("has_bill", False):
-            bills = result.get("bills", [])
-            return ImageAnalysisResponse(
-                text=result.get("message", "识别到账单信息"),
-                bills=bills
-            )
-        return ImageAnalysisResponse(
-            text=result.get("message", "未识别到账单信息"),
-            bills=[]
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"图片分析失败: {str(e)}")
 
 @app.post("/ai/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
-    """聊天对话"""
+    """聊天对话（支持文本、语音、图片）"""
     try:
+        # 确定输入类型
+        input_type = "text"
+        if request.image:
+            input_type = "image"
+        elif request.audio:
+            input_type = "voice"
+        
         # 保存用户消息
         user_message = create_chat_message(
             db=db,
             message=ChatMessageCreate(
                 content=request.message,
                 message_type="user",
-                input_type="text"
+                input_type=input_type
             ),
             user_id=current_user.id
         )
         
-        result = ai_service.chat(request.message)
-        
-        # 如果有账单信息，创建账单
-        bill_ids = []
-        if result.get("bills"):
-            for bill_data in result["bills"]:
-                print(bill_data)
-                # 添加默认日期并转换为BillCreate对象
-                bill_data_with_date = {**bill_data, "date": datetime.now()}
-                bill_create = BillCreate(**bill_data_with_date)
-                bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
-                bill_ids.append(bill.id)
-        
-        # 保存AI回复
-        ai_message = create_chat_message(
-            db=db,
-            message=ChatMessageCreate(
-                content=result.get("message", ""),
-                message_type="assistant",
-                input_type="text",
-                ai_confidence=0.9 if result.get("bills") else 0.0
-            ),
-            user_id=current_user.id,
-            bill_id=bill_ids[0] if bill_ids else None
-        )
-        
-        return ChatResponse(
-            message=result.get("message", ""),
-            bills=result.get("bills", [])
-        )
+        # 处理不同类型的输入
+        if request.image:
+            # 图片分析
+            result = ai_service.analyze_image(request.image)
+            confidence = 0.9 if result.get("has_bill", False) else 0.0
+            message_content = result.get("message", "未识别到账单信息")
+            bills = result.get("bills", [])
+            
+            # 如果有账单信息，创建账单
+            bill_ids = []
+            if bills:
+                for bill_data in bills:
+                    bill_data_with_date = {**bill_data, "date": datetime.now()}
+                    bill_create = BillCreate(**bill_data_with_date)
+                    bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
+                    bill_ids.append(bill.id)
+            
+            # 保存AI回复
+            ai_message = create_chat_message(
+                db=db,
+                message=ChatMessageCreate(
+                    content=message_content,
+                    message_type="assistant",
+                    input_type="image",
+                    ai_confidence=confidence
+                ),
+                user_id=current_user.id,
+                bill_id=bill_ids[0] if bill_ids else None
+            )
+            
+            return ChatResponse(
+                message=message_content,
+                bills=bills,
+                confidence=confidence
+            )
+            
+        elif request.audio:
+            # 语音识别
+            voice_result = ai_service.recognize_voice(request.audio)
+            if voice_result.get("success", False):
+                text = voice_result.get("text", "")
+                confidence = voice_result.get("confidence", 0.0)
+                
+                # 继续分析文本
+                text_result = ai_service.analyze_text(text)
+                message_content = f"语音识别：{text}\n{text_result.get('message', '')}"
+                bills = []
+                
+                if text_result.get("has_bill", False):
+                    bill_data = text_result.get("bill")
+                    bills = [bill_data]
+                    # 创建账单
+                    bill_data_with_date = {**bill_data, "date": datetime.now()}
+                    bill_create = BillCreate(**bill_data_with_date)
+                    bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
+                    
+                    # 保存AI回复并关联账单
+                    ai_message = create_chat_message(
+                        db=db,
+                        message=ChatMessageCreate(
+                            content=message_content,
+                            message_type="assistant",
+                            input_type="voice",
+                            ai_confidence=confidence
+                        ),
+                        user_id=current_user.id,
+                        bill_id=bill.id
+                    )
+                else:
+                    # 保存AI回复
+                    ai_message = create_chat_message(
+                        db=db,
+                        message=ChatMessageCreate(
+                            content=message_content,
+                            message_type="assistant",
+                            input_type="voice",
+                            ai_confidence=confidence
+                        ),
+                        user_id=current_user.id
+                    )
+                
+                return ChatResponse(
+                    message=message_content,
+                    bills=bills,
+                    confidence=confidence
+                )
+            else:
+                # 语音识别失败
+                error_message = voice_result.get("message", "语音识别失败")
+                ai_message = create_chat_message(
+                    db=db,
+                    message=ChatMessageCreate(
+                        content=error_message,
+                        message_type="assistant",
+                        input_type="voice",
+                        ai_confidence=0.0
+                    ),
+                    user_id=current_user.id
+                )
+                return ChatResponse(
+                    message=error_message,
+                    bills=[],
+                    confidence=0.0
+                )
+        else:
+            # 纯文本聊天
+            result = ai_service.chat(request.message)
+            confidence = 0.9 if result.get("bills") else 0.0
+            bills = result.get("bills", [])
+            
+            # 如果有账单信息，创建账单
+            bill_ids = []
+            if bills:
+                for bill_data in bills:
+                    bill_data_with_date = {**bill_data, "date": datetime.now()}
+                    bill_create = BillCreate(**bill_data_with_date)
+                    bill = create_bill(db=db, bill=bill_create, user_id=current_user.id)
+                    bill_ids.append(bill.id)
+            
+            # 保存AI回复
+            ai_message = create_chat_message(
+                db=db,
+                message=ChatMessageCreate(
+                    content=result.get("message", ""),
+                    message_type="assistant",
+                    input_type="text",
+                    ai_confidence=confidence
+                ),
+                user_id=current_user.id,
+                bill_id=bill_ids[0] if bill_ids else None
+            )
+            
+            return ChatResponse(
+                message=result.get("message", ""),
+                bills=bills,
+                confidence=confidence
+            )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"聊天失败: {str(e)}") 
