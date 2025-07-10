@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { MessageSquare, BarChart3, Calendar, TrendingUp } from 'lucide-react';
 import { Bill, BillCreate } from '@/types';
 import { billsAPI } from '@/lib/api';
@@ -11,7 +11,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import ChatInterface from '@/components/ChatInterface';
 import CalendarView from '@/components/CalendarView';
 import BillList from '@/components/BillList';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 
@@ -310,134 +310,108 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* 图表和账单列表标签页 */}
-              <Tabs defaultValue="bills" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="chart" className="flex items-center space-x-2">
-                    <TrendingUp className="h-4 w-4" />
-                    <span>趋势图</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="category" className="flex items-center space-x-2">
-                    <BarChart3 className="h-4 w-4" />
-                    <span>分类统计</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="calendar" className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>日历视图</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="bills" className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>账单列表</span>
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="chart" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle>
-                          {timeFilter === 'today' && '今日收支趋势'}
-                          {timeFilter === 'month' && '本月收支趋势'}
-                          {timeFilter === 'year' && '本年收支趋势'}
-                          {timeFilter === 'all' && '收支趋势'}
-                        </CardTitle>
-                        {timeFilter === 'all' && (
-                          <div className="flex space-x-2">
-                            <Button
-                              variant={dateRange === '7d' ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => setDateRange('7d')}
-                            >
-                              7天
-                            </Button>
-                            <Button
-                              variant={dateRange === '30d' ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => setDateRange('30d')}
-                            >
-                              30天
-                            </Button>
-                            <Button
-                              variant={dateRange === '90d' ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => setDateRange('90d')}
-                            >
-                              90天
-                            </Button>
-                          </div>
-                        )}
+              {/* 收支趋势柱状图 */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>
+                      {timeFilter === 'today' && '今日收支趋势'}
+                      {timeFilter === 'month' && '本月收支趋势'}
+                      {timeFilter === 'year' && '本年收支趋势'}
+                      {timeFilter === 'all' && '收支趋势'}
+                    </CardTitle>
+                    {timeFilter === 'all' && (
+                      <div className="flex space-x-2">
+                        <Button
+                          variant={dateRange === '7d' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateRange('7d')}
+                        >
+                          7天
+                        </Button>
+                        <Button
+                          variant={dateRange === '30d' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateRange('30d')}
+                        >
+                          30天
+                        </Button>
+                        <Button
+                          variant={dateRange === '90d' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateRange('90d')}
+                        >
+                          90天
+                        </Button>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={generateDateRangeData()}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
-                            <YAxis />
-                            <Tooltip formatter={(value) => [`¥${value}`, '金额']} />
-                            <Line type="monotone" dataKey="income" stroke="#10b981" strokeWidth={2} name="收入" />
-                            <Line type="monotone" dataKey="expense" stroke="#ef4444" strokeWidth={2} name="支出" />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={generateDateRangeData()}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <Tooltip formatter={(value) => [`¥${value}`, '金额']} />
+                        <Bar dataKey="income" fill="#10b981" name="收入" />
+                        <Bar dataKey="expense" fill="#ef4444" name="支出" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
 
-                <TabsContent value="category" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>
-                        {timeFilter === 'today' && '今日分类统计'}
-                        {timeFilter === 'month' && '本月分类统计'}
-                        {timeFilter === 'year' && '本年分类统计'}
-                        {timeFilter === 'all' && '分类统计'}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={generatePieData()}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                              outerRadius={80}
-                              fill="#8884d8"
-                              dataKey="value"
-                            >
-                              {generatePieData().map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
-                            </Pie>
-                            <Tooltip formatter={(value) => [`¥${value}`, '金额']} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+              {/* 分类统计饼图 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {timeFilter === 'today' && '今日分类统计'}
+                    {timeFilter === 'month' && '本月分类统计'}
+                    {timeFilter === 'year' && '本年分类统计'}
+                    {timeFilter === 'all' && '分类统计'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={generatePieData()}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {generatePieData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [`¥${value}`, '金额']} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
 
-                <TabsContent value="calendar" className="space-y-4">
-                  <CalendarView 
-                    bills={bills}
-                    selectedDate={selectedDate}
-                    onDateSelect={handleDateSelect}
-                  />
-                </TabsContent>
+              {/* 支出热力图 */}
+              <CalendarView 
+                bills={bills}
+                selectedDate={selectedDate}
+                onDateSelect={handleDateSelect}
+              />
 
-                <TabsContent value="bills" className="space-y-4">
-                                     <BillList 
-                     bills={selectedDateBills}
-                     selectedDate={selectedDate}
-                     onDateChange={setSelectedDate}
-                     onDeleteBill={deleteBill}
-                   />
-                </TabsContent>
-              </Tabs>
+              {/* 账单列表 */}
+              <BillList 
+                bills={selectedDateBills}
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+                onDeleteBill={deleteBill}
+              />
             </div>
           </div>
         </div>

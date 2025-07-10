@@ -72,7 +72,7 @@ export default function BillList({
             <p className="text-gray-400 text-sm mt-1">尝试选择其他日期或添加新的账单</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 max-h-80 overflow-auto">
+          <div className="grid grid-cols-1 gap-3 max-h-200 overflow-auto">
             {bills.map((bill, index) => (
               <div key={bill.id} className="relative group">
                 <BillCard bill={bill} index={index} showRecordLabel={false} />
