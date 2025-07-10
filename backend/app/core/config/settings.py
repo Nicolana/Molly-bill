@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 class Settings(BaseSettings):
@@ -31,8 +31,6 @@ class Settings(BaseSettings):
     dashscope_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
     
-    class Config:
-        env_file = ".env"
-        extra = "ignore"  # 忽略额外的环境变量
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings() 

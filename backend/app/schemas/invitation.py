@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
 from app.models.base import UserRole, InvitationStatus
 from typing import Optional
@@ -18,9 +18,8 @@ class Invitation(InvitationBase):
     expires_at: datetime
     created_at: datetime
     accepted_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
+    
+    model_config = ConfigDict(from_attributes=True)
 
 class InvitationResponse(BaseModel):
     invitation_id: int

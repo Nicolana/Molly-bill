@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 from app.models.base import UserRole, LedgerStatus
@@ -17,9 +17,8 @@ class Ledger(LedgerBase):
     status: LedgerStatus
     created_at: datetime
     deleted_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
+    
+    model_config = ConfigDict(from_attributes=True)
 
 class UserLedgerBase(BaseModel):
     role: UserRole = UserRole.MEMBER
@@ -34,6 +33,5 @@ class UserLedger(UserLedgerBase):
     ledger_id: int
     joined_at: datetime
     status: str
-
-    class Config:
-        from_attributes = True 
+    
+    model_config = ConfigDict(from_attributes=True) 

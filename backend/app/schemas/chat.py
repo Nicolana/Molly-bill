@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
@@ -18,9 +18,8 @@ class ChatMessage(ChatMessageBase):
     ledger_id: int
     bill_id: Optional[int] = None
     is_processed: bool
-
-    class Config:
-        from_attributes = True
+    
+    model_config = ConfigDict(from_attributes=True)
 
 class ChatHistoryResponse(BaseModel):
     messages: List[ChatMessage]
