@@ -88,15 +88,43 @@ backend/
 pip install -r requirements.txt
 ```
 
-2. 运行数据库迁移：
+2. 初始化数据库：
 ```bash
-python -m app.db.migrate
+# 使用管理脚本（推荐）
+python manage_db.py init
+
+# 或使用 Alembic 命令
+alembic upgrade head
 ```
 
 3. 启动应用：
 ```bash
 python run.py
 ```
+
+## 数据库管理
+
+本项目使用 Alembic 进行数据库迁移管理。
+
+### 快速命令
+
+```bash
+# 查看数据库状态
+python manage_db.py status
+
+# 重置数据库
+python manage_db.py reset
+
+# 创建新迁移
+python manage_db.py migrate "迁移描述"
+
+# 应用迁移
+python manage_db.py upgrade
+```
+
+### 详细说明
+
+更多数据库迁移相关信息，请查看 [migrations/README.md](migrations/README.md)
 
 ## API文档
 
