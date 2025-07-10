@@ -9,6 +9,9 @@ python-multipart==0.0.6
 email-validator==2.1.0
 python-dotenv==1.0.0
 
+# 数据库迁移
+alembic==1.13.1
+
 # 测试依赖
 pytest==7.4.3
 pytest-asyncio==0.21.1
