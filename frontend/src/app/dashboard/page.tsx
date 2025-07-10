@@ -270,7 +270,7 @@ export default function DashboardPage() {
                   />
                 </div>
                 
-                <CardContent className="p-6 relative z-10">
+                <CardContent className="px-6 py-0 relative z-10">
                   <div className="flex items-center justify-between">
                     {/* 主要区域 - 支出 */}
                     <div className="flex-1">
