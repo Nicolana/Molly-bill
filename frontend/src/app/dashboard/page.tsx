@@ -10,6 +10,7 @@ import { billsAPI } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ChatInterface from '@/components/ChatInterface';
 import CalendarView from '@/components/CalendarView';
+import BillList from '@/components/BillList';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
@@ -423,79 +424,12 @@ export default function DashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="bills" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle>账单记录</CardTitle>
-                        <div className="flex items-center space-x-4">
-                          <input
-                            type="date"
-                            value={dayjs(selectedDate).format('YYYY-MM-DD')}
-                            onChange={(e) => setSelectedDate(new Date(e.target.value))}
-                            className="px-3 py-1 border rounded-md text-sm"
-                          />
-                          <div className="text-sm text-gray-600 space-x-4">
-                            <span className="text-green-600">
-                              收入: ¥{selectedDateBills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
-                            </span>
-                            <span className="text-red-600">
-                              支出: ¥{selectedDateBills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {selectedDateBills.length === 0 ? (
-                        <div className="text-center text-gray-500 py-8">
-                          <p>该日期没有账单记录</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3 max-h-96 overflow-auto">
-                          {selectedDateBills.map((bill) => (
-                            <div
-                              key={bill.id}
-                              className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2">
-                                  <span className={`font-medium ${bill.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                    {bill.type === 'income' ? '+' : '-'}¥{bill.amount.toFixed(2)}
-                                  </span>
-                                  <span className={`text-xs px-2 py-1 rounded ${
-                                    bill.type === 'income' 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : 'bg-red-100 text-red-800'
-                                  }`}>
-                                    {bill.type === 'income' ? '收入' : '支出'}
-                                  </span>
-                                  {bill.category && (
-                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                      {bill.category}
-                                    </span>
-                                  )}
-                                </div>
-                                {bill.description && (
-                                  <p className="text-sm text-gray-600 mt-1">{bill.description}</p>
-                                )}
-                                <p className="text-xs text-gray-400 mt-1">
-                                  {dayjs(bill.date).format('HH:mm')}
-                                </p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteBill(bill.id)}
-                                className="text-red-500 hover:text-red-700"
-                              >
-                                删除
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                                     <BillList 
+                     bills={selectedDateBills}
+                     selectedDate={selectedDate}
+                     onDateChange={setSelectedDate}
+                     onDeleteBill={deleteBill}
+                   />
                 </TabsContent>
               </Tabs>
             </div>

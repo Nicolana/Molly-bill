@@ -21,11 +21,11 @@ import {
   Briefcase,
   DollarSign
 } from 'lucide-react';
-import { BillCreate } from '@/types';
+import { Bill, BillCreate } from '@/types';
 import dayjs from 'dayjs';
 
 interface BillCardProps {
-  bill: BillCreate;
+  bill: Bill | BillCreate;
   index: number;
 }
 
@@ -52,10 +52,9 @@ const categoryIcons: Record<string, React.ComponentType<any>> = {
 
 export default function BillCard({ bill, index }: BillCardProps) {
   const IconComponent = categoryIcons[bill.category || '其他'] || DollarSign;
-  console.log(bill);
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow py-0">
-      <CardContent className="p-4 min-w-[300px]">
+      <CardContent className="p-4">
         {/* 顶部区域 */}
         <div className="flex items-center justify-between mb-3">
           <div className="text-xs text-gray-500">已记录：{bill.type === 'expense' ? '支出' : '收入'}</div>
@@ -91,8 +90,10 @@ export default function BillCard({ bill, index }: BillCardProps) {
               
               {/* 右侧金额 */}
               <div className="flex-shrink-0 ml-3">
-                <span className="font-semibold text-lg text-gray-900">
-                  ¥{bill.amount.toFixed(2)}
+                <span className={`font-semibold text-lg ${
+                  bill.type === 'income' ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {bill.type === 'income' ? '+' : '-'}¥{bill.amount.toFixed(2)}
                 </span>
               </div>
             </div>

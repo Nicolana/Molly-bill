@@ -1,242 +1,97 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Calendar } from 'lucide-react';
 import { Bill } from '@/types';
-import { billsAPI } from '@/lib/api';
-import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import BillCard from './BillCard';
+import dayjs from 'dayjs';
 
-export default function BillList() {
-  const [bills, setBills] = useState<Bill[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  
-  // 分页状态
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
-  const [total, setTotal] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+interface BillListProps {
+  bills: Bill[];
+  selectedDate: Date;
+  onDateChange: (date: Date) => void;
+  onDeleteBill: (id: number) => void;
+  title?: string;
+}
 
-  // 获取账单列表
-  const fetchBills = async (page: number = 0, size: number = 20) => {
-    try {
-      setLoading(true);
-      const response = await billsAPI.getBills(page * size, size);
-      
-      // 处理分页响应数据
-      if (response.data.success && response.data.data) {
-        const paginatedData = response.data.data;
-        setBills(paginatedData.data || []);
-        setTotal(paginatedData.total || 0);
-        setCurrentPage(page);
-        setPageSize(size);
-        setHasMore((page + 1) * size < (paginatedData.total || 0));
-      } else {
-        setError(response.data.message || '获取账单失败');
-      }
-    } catch (err) {
-      console.error('获取账单失败:', err);
-      setError('获取账单失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 删除账单
-  const deleteBill = async (id: number) => {
-    try {
-      await billsAPI.deleteBill(id);
-      // 重新获取当前页数据
-      fetchBills(currentPage, pageSize);
-    } catch (err) {
-      console.error('删除账单失败:', err);
-      alert('删除账单失败');
-    }
-  };
-
-  // 上一页
-  const goToPreviousPage = () => {
-    if (currentPage > 0) {
-      fetchBills(currentPage - 1, pageSize);
-    }
-  };
-
-  // 下一页
-  const goToNextPage = () => {
-    if (hasMore) {
-      fetchBills(currentPage + 1, pageSize);
-    }
-  };
-
-  useEffect(() => {
-    fetchBills();
-  }, []);
-
-  // 计算总金额
-  const totalAmount = bills.reduce((sum, bill) => sum + bill.amount, 0);
-
-  // 按分类统计
-  const categoryStats = bills.reduce((stats, bill) => {
-    const category = bill.category || '未分类';
-    stats[category] = (stats[category] || 0) + bill.amount;
-    return stats;
-  }, {} as Record<string, number>);
-
-  if (loading && bills.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-gray-500">加载中...</div>
-      </div>
-    );
-  }
-
-  if (error && bills.length === 0) {
-    return (
-      <div className="text-center text-red-500 p-4">
-        {error}
-        <Button onClick={() => fetchBills()} className="ml-2">重试</Button>
-      </div>
-    );
-  }
+export default function BillList({ 
+  bills, 
+  selectedDate, 
+  onDateChange, 
+  onDeleteBill, 
+  title = "账单记录" 
+}: BillListProps) {
+  // 计算当日统计
+  const totalIncome = bills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0);
+  const totalExpense = bills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0);
+  const netAmount = totalIncome - totalExpense;
 
   return (
-    <div className="space-y-6">
-      {/* 统计卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">总支出</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">¥{totalAmount.toFixed(2)}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">账单数量</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{total}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">平均支出</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              ¥{total > 0 ? (totalAmount / total).toFixed(2) : '0.00'}
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center space-x-2">
+            <Calendar className="h-5 w-5 text-blue-600" />
+            <span>{title}</span>
+          </CardTitle>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <label className="text-sm text-gray-600">选择日期:</label>
+              <input
+                type="date"
+                value={dayjs(selectedDate).format('YYYY-MM-DD')}
+                onChange={(e) => onDateChange(new Date(e.target.value))}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 分类统计 */}
-      {Object.keys(categoryStats).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>分类统计</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {Object.entries(categoryStats)
-                .sort(([,a], [,b]) => b - a)
-                .map(([category, amount]) => (
-                  <div key={category} className="flex justify-between items-center">
-                    <span className="text-sm">{category}</span>
-                    <span className="font-medium">¥{amount.toFixed(2)}</span>
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 账单列表 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>账单记录</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {bills.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
-              <p>还没有账单记录</p>
-              <p className="text-sm mt-1">开始使用AI助手记录你的支出吧！</p>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-3">
-                {bills.map((bill) => (
-                  <div
-                    key={bill.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">¥{bill.amount.toFixed(2)}</span>
-                        {bill.category && (
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                            {bill.category}
-                          </span>
-                        )}
-                      </div>
-                      {bill.description && (
-                        <p className="text-sm text-gray-600 mt-1">{bill.description}</p>
-                      )}
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(bill.date).toLocaleDateString('zh-CN')}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteBill(bill.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+            <div className="flex items-center space-x-4 text-sm">
+              <div className="flex items-center space-x-1">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-green-600 font-medium">
+                  收入: ¥{totalIncome.toFixed(2)}
+                </span>
               </div>
-
-              {/* 分页控件 */}
-              {total > pageSize && (
-                <div className="flex items-center justify-between mt-6 pt-4 border-t">
-                  <div className="text-sm text-gray-600">
-                    显示 {currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, total)} 条，共 {total} 条
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={goToPreviousPage}
-                      disabled={currentPage === 0 || loading}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      上一页
-                    </Button>
-                    <span className="text-sm text-gray-600">
-                      第 {currentPage + 1} 页
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={goToNextPage}
-                      disabled={!hasMore || loading}
-                    >
-                      下一页
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span className="text-red-600 font-medium">
+                  支出: ¥{totalExpense.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {bills.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+              <Calendar className="h-8 w-8 text-gray-400" />
+            </div>
+            <p className="text-gray-500 text-lg font-medium">该日期没有账单记录</p>
+            <p className="text-gray-400 text-sm mt-1">尝试选择其他日期或添加新的账单</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 max-h-80 overflow-auto">
+            {bills.map((bill, index) => (
+              <div key={bill.id} className="relative group">
+                <BillCard bill={bill} index={index} />
+                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                  <button
+                    onClick={() => onDeleteBill(bill.id)}
+                    className="w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all duration-200 hover:scale-110"
+                    title="删除账单"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 } 
