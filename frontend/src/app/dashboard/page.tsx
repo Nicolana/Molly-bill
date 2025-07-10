@@ -260,49 +260,55 @@ export default function DashboardPage() {
               </div>
 
               {/* 统计卡片 */}
-              <div className="grid grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">总收入</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">
-                      ¥{bills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
-                    </div>
-                  </CardContent>
-                </Card>
+              <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-400/20 via-green-300/15 to-teal-200/20 backdrop-blur-md border-0">
+                {/* 背景插图 */}
+                <div className="absolute inset-0 opacity-10">
+                  <img 
+                    src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" 
+                    alt="Finance background"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">总支出</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-red-600">
-                      ¥{bills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
+                <CardContent className="p-6 relative z-10">
+                  <div className="flex items-center justify-between">
+                    {/* 主要区域 - 支出 */}
+                    <div className="flex-1">
+                      <div className="mb-2">
+                        <h3 className="text-sm font-medium text-gray-700 mb-1">总支出</h3>
+                        <div className="text-3xl font-bold text-gray-800">
+                          ¥{bills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1 text-xs text-gray-600">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" />
+                        </svg>
+                        <span>本月支出</span>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">净收入</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className={`text-2xl font-bold ${totalAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ¥{totalAmount.toFixed(2)}
+                    
+                    {/* 次要区域 - 右侧信息 */}
+                    <div className="flex flex-col space-y-4 ml-8">
+                      {/* 收入 */}
+                      <div className="text-right">
+                        <div className="text-xs text-gray-600 mb-1">总收入</div>
+                        <div className="text-lg font-semibold text-green-600">
+                          ¥{bills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
+                        </div>
+                      </div>
+                      
+                      {/* 账单数量 */}
+                      <div className="text-right">
+                        <div className="text-xs text-gray-600 mb-1">账单数量</div>
+                        <div className="text-lg font-semibold text-emerald-600">
+                          {totalCount}
+                        </div>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-600">账单数量</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">{totalCount}</div>
-                  </CardContent>
-                </Card>
-              </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* 图表和账单列表标签页 */}
               <Tabs defaultValue="bills" className="w-full">
