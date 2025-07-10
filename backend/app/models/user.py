@@ -11,6 +11,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     avatar = Column(String, nullable=True)  # 头像URL
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
     # 关系
     bills = relationship("Bill", back_populates="owner")
