@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: molly-bill-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-molly_bill}
+      POSTGRES_USER: ${POSTGRES_USER:-molly_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-molly_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - molly-bill-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-molly_user} -d ${POSTGRES_DB:-molly_bill}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # 后端 FastAPI 服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: molly-bill-backend
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-molly_user}:${POSTGRES_PASSWORD:-molly_password}@postgres:5432/${POSTGRES_DB:-molly_bill}
+      - SECRET_KEY=${SECRET_KEY}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - molly-bill-network
+    restart: unless-stopped
+
+  # 前端 Next.js 服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: molly-bill-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+    networks:
+      - molly-bill-network
+    restart: unless-stopped
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: molly-bill-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - molly-bill-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  molly-bill-network:
+    driver: bridge 

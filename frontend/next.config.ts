@@ -1,11 +1,19 @@
 import type { NextConfig } from "next";
-import { codeInspectorPlugin } from 'code-inspector-plugin';
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  webpack: (config, { dev, isServer }) => {
-    config.plugins.push(codeInspectorPlugin({ bundler: 'webpack' }));
-    return config;
+  output: 'standalone',
+  experimental: {
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
+  },
+  images: {
+    unoptimized: true,
   },
 };
 
