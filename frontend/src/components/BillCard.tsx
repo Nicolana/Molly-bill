@@ -27,6 +27,7 @@ import dayjs from 'dayjs';
 interface BillCardProps {
   bill: Bill | BillCreate;
   index: number;
+  showRecordLabel?: boolean; // 是否显示"已记录"标签
 }
 
 // 分类图标映射
@@ -50,14 +51,16 @@ const categoryIcons: Record<string, React.ComponentType<any>> = {
   '其他': DollarSign
 };
 
-export default function BillCard({ bill, index }: BillCardProps) {
+export default function BillCard({ bill, index, showRecordLabel = true }: BillCardProps) {
   const IconComponent = categoryIcons[bill.category || '其他'] || DollarSign;
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow py-0">
-      <CardContent className="p-4">
+      <CardContent className="p-4 min-w-[300px]">
         {/* 顶部区域 */}
         <div className="flex items-center justify-between mb-3">
-          <div className="text-xs text-gray-500">已记录：{bill.type === 'expense' ? '支出' : '收入'}</div>
+          {showRecordLabel ? (
+            <div className="text-xs text-gray-500">已记录：{bill.type === 'expense' ? '支出' : '收入'}</div>
+          ) : <div></div> }
           <div className="text-xs text-gray-400">
             {bill.date ? dayjs(bill.date).locale('zh-cn').format('MM-DD dddd') : '刚刚'}
           </div>
@@ -91,7 +94,7 @@ export default function BillCard({ bill, index }: BillCardProps) {
               {/* 右侧金额 */}
               <div className="flex-shrink-0 ml-3">
                 <span className={`font-semibold text-lg ${
-                  bill.type === 'income' ? 'text-green-600' : 'text-red-600'
+                  bill.type === 'income' ? 'text-green-600' : 'text-gray-900'
                 }`}>
                   {bill.type === 'income' ? '+' : '-'}¥{bill.amount.toFixed(2)}
                 </span>

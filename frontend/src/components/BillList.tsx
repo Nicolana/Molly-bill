@@ -75,7 +75,7 @@ export default function BillList({
           <div className="grid grid-cols-1 gap-3 max-h-80 overflow-auto">
             {bills.map((bill, index) => (
               <div key={bill.id} className="relative group">
-                <BillCard bill={bill} index={index} />
+                <BillCard bill={bill} index={index} showRecordLabel={false} />
                 <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                   <button
                     onClick={() => onDeleteBill(bill.id)}
