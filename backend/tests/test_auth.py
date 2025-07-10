@@ -63,6 +63,51 @@ class TestAuth:
         response = client.post("/api/v1/register", json=data_without_email)
         assert response.status_code == 422
     
+    def test_register_without_username_and_avatar(self, client):
+        """测试不传username和avatar的注册"""
+        minimal_data = {
+            "email": "test@example.com",
+            "password": "testpassword123"
+        }
+        response = client.post("/api/v1/register", json=minimal_data)
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert data["data"]["email"] == "test@example.com"
+        assert data["data"]["username"] == "test"  # 默认使用邮箱前缀
+        assert data["data"]["avatar"] is not None  # 应该有默认头像
+        assert "dicebear.com" in data["data"]["avatar"]  # 验证是DiceBear头像
+    
+    def test_register_without_username_only(self, client):
+        """测试只不传username的注册"""
+        data_without_username = {
+            "email": "user@example.com",
+            "password": "testpassword123",
+            "avatar": "https://example.com/custom-avatar.jpg"
+        }
+        response = client.post("/api/v1/register", json=data_without_username)
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["data"]["username"] == "user"  # 默认使用邮箱前缀
+        assert data["data"]["avatar"] == "https://example.com/custom-avatar.jpg"  # 保持自定义头像
+    
+    def test_register_without_avatar_only(self, client):
+        """测试只不传avatar的注册"""
+        data_without_avatar = {
+            "email": "newuser@example.com",
+            "username": "customusername",
+            "password": "testpassword123"
+        }
+        response = client.post("/api/v1/register", json=data_without_avatar)
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["data"]["username"] == "customusername"  # 保持自定义用户名
+        assert data["data"]["avatar"] is not None  # 应该有默认头像
+        assert "dicebear.com" in data["data"]["avatar"]  # 验证是DiceBear头像
+    
     def test_login_success(self, client, test_user_data):
         """测试用户登录成功"""
         # 先注册用户

@@ -27,6 +27,14 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
             detail="邮箱已被注册"
         )
     
+    # 设置默认值
+    if not user.username:
+        user.username = user.email.split('@')[0]  # 使用邮箱前缀作为默认用户名
+    
+    if not user.avatar:
+        # 使用 DiceBear API 生成默认头像
+        user.avatar = f"https://api.dicebear.com/7.x/avataaars/svg?seed={user.email}"
+    
     # 创建新用户
     created_user = create_user(db=db, user=user)
     return success_response(

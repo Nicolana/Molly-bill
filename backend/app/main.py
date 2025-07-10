@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config.settings import settings
 from app.db.database import engine, Base
 
+# 导入所有模型以确保表被创建
+from app.models import User, Ledger, UserLedger, Invitation, Bill, ChatMessage
+
 # 创建数据库表
 Base.metadata.create_all(bind=engine)
 
