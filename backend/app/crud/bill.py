@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
-from app.models.base import Bill
+from app.models import Bill
 from app.schemas.bill import BillCreate
 
 def get_bills(db: Session, ledger_id: int, skip: int = 0, limit: int = 100, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):

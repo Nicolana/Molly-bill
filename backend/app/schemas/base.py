@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Any, Union
 from datetime import datetime
 from enum import Enum
-from app.models.base import BillType
+from app.models import BillType
 
 # 统一响应格式
 class BaseResponse(BaseModel):

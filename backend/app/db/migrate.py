@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.db.database import SessionLocal, engine
-from app.models.base import Base, User, Bill, ChatMessage, Ledger, UserLedger, Invitation
+from app.models import User, Bill, ChatMessage, Ledger, UserLedger, Invitation
 from app.crud.ledger import create_personal_ledger
 from app.crud.user import get_user_by_email
 from datetime import datetime

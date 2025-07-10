@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime, timedelta
-from app.models.base import Invitation, UserLedger, InvitationStatus, UserRole
+from app.models import Invitation, UserLedger, InvitationStatus, UserRole
 from app.schemas.invitation import InvitationCreate
 from app.core.config.settings import settings
 

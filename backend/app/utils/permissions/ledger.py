@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.crud.ledger import check_user_ledger_access, check_user_ledger_admin
-from app.models.base import User
+from app.models import User
 
 def require_ledger_access(user: User, ledger_id: int, db: Session):
     """要求用户有账本访问权限"""

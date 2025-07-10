@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
-from app.models.base import Ledger, UserLedger, UserRole, LedgerStatus
+from app.models import Ledger, UserLedger, UserRole, LedgerStatus
 from app.schemas.ledger import LedgerCreate
 from app.core.config.settings import settings
 

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.base import User
+from app.models import User
 from app.schemas.user import UserCreate
 from app.core.security.password import get_password_hash
 from app.crud.ledger import create_personal_ledger

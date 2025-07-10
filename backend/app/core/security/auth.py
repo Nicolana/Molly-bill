@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config.settings import settings
 from app.db.database import get_db
-from app.models.base import User
+from app.models import User
 from app.crud.user import get_user_by_email
 from .password import verify_password
 

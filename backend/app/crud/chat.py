@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import Optional
-from app.models.base import ChatMessage
+from app.models import ChatMessage
 from app.schemas.chat import ChatMessageCreate
 
 def create_chat_message(db: Session, message: ChatMessageCreate, user_id: int, bill_id: Optional[int] = None):

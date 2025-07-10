@@ -11,7 +11,7 @@ class ChatMessageBase(BaseModel):
 class ChatMessageCreate(ChatMessageBase):
     ledger_id: int
 
-class ChatMessage(ChatMessageBase):
+class ChatMessageResponse(ChatMessageBase):
     id: int
     timestamp: datetime
     user_id: int
@@ -22,16 +22,17 @@ class ChatMessage(ChatMessageBase):
     model_config = ConfigDict(from_attributes=True)
 
 class ChatHistoryResponse(BaseModel):
-    messages: List[ChatMessage]
+    messages: List[ChatMessageResponse]
     total: int
 
 class ChatRequest(BaseModel):
     message: str
-    ledger_id: int
+    ledger_id: Optional[int] = None
     image: Optional[str] = None  # base64编码的图片
     audio: Optional[str] = None  # base64编码的音频
 
 class ChatResponse(BaseModel):
     message: str
+    user_id: int
     bills: Optional[List[dict]] = None
     confidence: Optional[float] = None 

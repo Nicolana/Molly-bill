@@ -3,7 +3,7 @@ from fastapi import status
 from sqlalchemy.orm import Session
 
 from app.crud.user import get_user_by_email
-from app.models.base import User, Ledger, UserLedger
+from app.models import User, Ledger, UserLedger
 
 class TestAuth:
     """认证相关测试"""
