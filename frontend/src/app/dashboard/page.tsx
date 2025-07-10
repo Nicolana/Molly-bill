@@ -20,12 +20,13 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'month' | 'year'>('month'); // 新增时间筛选
 
   // 获取账单列表
   const fetchBills = async () => {
     try {
       setLoading(true);
-      const response = await billsAPI.getBills(0, 1000); // 获取更多数据用于图表
+      const response = await billsAPI.getBills(0, 1000, timeFilter); // 传递时间筛选参数
       
       if (response.data.success && response.data.data) {
         const paginatedData = response.data.data;
@@ -65,12 +66,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchBills();
-  }, []);
+  }, [timeFilter]); // 当时间筛选改变时重新获取数据
 
   // 计算统计数据
-  const totalAmount = bills.reduce((sum, bill) => sum + bill.amount, 0);
+  const totalAmount = bills.reduce((sum, bill) => {
+    return bill.type === 'income' ? sum + bill.amount : sum - bill.amount;
+  }, 0);
   const totalCount = bills.length;
-  const averageAmount = totalCount > 0 ? totalAmount / totalCount : 0;
+  const averageAmount = totalCount > 0 ? Math.abs(totalAmount) / totalCount : 0;
 
   // 按分类统计
   const categoryStats = bills.reduce((stats, bill) => {
@@ -83,28 +86,77 @@ export default function DashboardPage() {
 
   // 生成日期范围数据
   const generateDateRangeData = () => {
-    const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
+    const now = dayjs();
+    let days = 30; // 默认30天
+    let startDate = now.subtract(29, 'day'); // 默认显示最近30天
+    
+    // 根据时间筛选调整显示范围
+    switch (timeFilter) {
+      case 'today':
+        days = 24; // 显示24小时
+        startDate = now.startOf('day');
+        break;
+      case 'month':
+        days = now.daysInMonth();
+        startDate = now.startOf('month');
+        break;
+      case 'year':
+        days = 12; // 显示12个月
+        startDate = now.startOf('year');
+        break;
+      default:
+        // 'all' 使用原来的dateRange逻辑
+        days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
+        startDate = now.subtract(days - 1, 'day');
+    }
+    
     const data = [];
     
-    for (let i = days - 1; i >= 0; i--) {
-      const date = dayjs().subtract(i, 'day');
-      const dayStart = date.startOf('day');
-      const dayEnd = date.endOf('day');
-      
-      const dayBills = bills.filter(bill => {
-        const billDate = dayjs(bill.date);
-        return billDate.isSame(dayStart, 'day') || (billDate.isAfter(dayStart) && billDate.isBefore(dayEnd));
-      });
-      
-      const dayIncome = dayBills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0);
-      const dayExpense = dayBills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0);
-      
-      data.push({
-        date: date.format('MM/DD'),
-        income: dayIncome,
-        expense: dayExpense,
-        count: dayBills.length
-      });
+    if (timeFilter === 'year') {
+      // 年度视图：显示12个月的数据
+      for (let i = 0; i < 12; i++) {
+        const monthDate = now.startOf('year').add(i, 'month');
+        const monthStart = monthDate.startOf('month');
+        const monthEnd = monthDate.endOf('month');
+        
+        const monthBills = bills.filter(bill => {
+          const billDate = dayjs(bill.date);
+          return billDate.isSame(monthStart, 'month') && billDate.isSame(monthStart, 'year');
+        });
+        
+        const monthIncome = monthBills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0);
+        const monthExpense = monthBills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0);
+        
+        data.push({
+          date: monthDate.format('MM月'),
+          income: monthIncome,
+          expense: monthExpense,
+          count: monthBills.length
+        });
+      }
+    } else {
+      // 日视图：显示具体天数
+      for (let i = 0; i < days; i++) {
+        const date = startDate.add(i, timeFilter === 'today' ? 'hour' : 'day');
+        const dayStart = date.startOf(timeFilter === 'today' ? 'hour' : 'day');
+        const dayEnd = date.endOf(timeFilter === 'today' ? 'hour' : 'day');
+        
+        const dayBills = bills.filter(bill => {
+          const billDate = dayjs(bill.date);
+          return billDate.isSame(dayStart, timeFilter === 'today' ? 'hour' : 'day') || 
+                 (billDate.isAfter(dayStart) && billDate.isBefore(dayEnd));
+        });
+        
+        const dayIncome = dayBills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0);
+        const dayExpense = dayBills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0);
+        
+        data.push({
+          date: date.format(timeFilter === 'today' ? 'HH:mm' : 'MM/DD'),
+          income: dayIncome,
+          expense: dayExpense,
+          count: dayBills.length
+        });
+      }
     }
     
     return data;
@@ -166,6 +218,46 @@ export default function DashboardPage() {
           {/* 右侧账单和图表区域 */}
           <div className="w-1/2 overflow-auto">
             <div className="p-6 space-y-6">
+              {/* 时间筛选 */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {timeFilter === 'today' && '今日统计'}
+                  {timeFilter === 'month' && '本月统计'}
+                  {timeFilter === 'year' && '本年统计'}
+                  {timeFilter === 'all' && '全部统计'}
+                </h2>
+                <div className="flex space-x-2">
+                  <Button
+                    variant={timeFilter === 'today' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTimeFilter('today')}
+                  >
+                    今日
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'month' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTimeFilter('month')}
+                  >
+                    本月
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'year' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTimeFilter('year')}
+                  >
+                    本年
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setTimeFilter('all')}
+                  >
+                    全部
+                  </Button>
+                </div>
+              </div>
+
               {/* 统计卡片 */}
               <div className="grid grid-cols-4 gap-4">
                 <Card>
@@ -236,30 +328,37 @@ export default function DashboardPage() {
                   <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between">
-                        <CardTitle>收支趋势</CardTitle>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant={dateRange === '7d' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setDateRange('7d')}
-                          >
-                            7天
-                          </Button>
-                          <Button
-                            variant={dateRange === '30d' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setDateRange('30d')}
-                          >
-                            30天
-                          </Button>
-                          <Button
-                            variant={dateRange === '90d' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setDateRange('90d')}
-                          >
-                            90天
-                          </Button>
-                        </div>
+                        <CardTitle>
+                          {timeFilter === 'today' && '今日收支趋势'}
+                          {timeFilter === 'month' && '本月收支趋势'}
+                          {timeFilter === 'year' && '本年收支趋势'}
+                          {timeFilter === 'all' && '收支趋势'}
+                        </CardTitle>
+                        {timeFilter === 'all' && (
+                          <div className="flex space-x-2">
+                            <Button
+                              variant={dateRange === '7d' ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => setDateRange('7d')}
+                            >
+                              7天
+                            </Button>
+                            <Button
+                              variant={dateRange === '30d' ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => setDateRange('30d')}
+                            >
+                              30天
+                            </Button>
+                            <Button
+                              variant={dateRange === '90d' ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => setDateRange('90d')}
+                            >
+                              90天
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -282,7 +381,12 @@ export default function DashboardPage() {
                 <TabsContent value="category" className="space-y-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle>分类统计</CardTitle>
+                      <CardTitle>
+                        {timeFilter === 'today' && '今日分类统计'}
+                        {timeFilter === 'month' && '本月分类统计'}
+                        {timeFilter === 'year' && '本年分类统计'}
+                        {timeFilter === 'all' && '分类统计'}
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="h-64">

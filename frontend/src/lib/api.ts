@@ -72,8 +72,8 @@ export const authAPI = {
 
 // 账单相关API
 export const billsAPI = {
-  getBills: (skip?: number, limit?: number) => api.get<BaseResponse<PaginatedResponse<Bill>>>('/bills/', {
-    params: { skip, limit }
+  getBills: (skip?: number, limit?: number, timeFilter?: string) => api.get<BaseResponse<PaginatedResponse<Bill>>>('/bills/', {
+    params: { skip, limit, time_filter: timeFilter }
   }),
   createBill: (data: BillCreate) => api.post<BaseResponse<Bill>>('/bills/', data),
   deleteBill: (id: number) => api.delete<BaseResponse>(`/bills/${id}`),

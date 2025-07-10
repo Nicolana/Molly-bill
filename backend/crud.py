@@ -27,12 +27,25 @@ def create_user(db: Session, user: UserCreate):
     db.refresh(db_user)
     return db_user
 
-def get_bills(db: Session, user_id: int, skip: int = 0, limit: int = 100):
-    return db.query(Bill).filter(Bill.owner_id == user_id).offset(skip).limit(limit).all()
+def get_bills(db: Session, user_id: int, skip: int = 0, limit: int = 100, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
+    """获取用户账单，支持时间筛选"""
+    query = db.query(Bill).filter(Bill.owner_id == user_id)
+    
+    # 添加时间筛选
+    if start_date and end_date:
+        query = query.filter(Bill.date >= start_date, Bill.date <= end_date)
+    
+    return query.order_by(Bill.date.desc()).offset(skip).limit(limit).all()
 
-def get_bills_count(db: Session, user_id: int):
-    """获取用户账单总数"""
-    return db.query(Bill).filter(Bill.owner_id == user_id).count()
+def get_bills_count(db: Session, user_id: int, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
+    """获取用户账单总数，支持时间筛选"""
+    query = db.query(Bill).filter(Bill.owner_id == user_id)
+    
+    # 添加时间筛选
+    if start_date and end_date:
+        query = query.filter(Bill.date >= start_date, Bill.date <= end_date)
+    
+    return query.count()
 
 def create_bill(db: Session, bill: BillCreate, user_id: int):
     print(bill)

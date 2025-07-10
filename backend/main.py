@@ -64,8 +64,37 @@ async def login_for_access_token(login_data: LoginRequest, db: Session = Depends
     )
 
 @app.get("/bills/", response_model=BaseResponse)
-async def read_bills(skip: int = 0, limit: int = 100, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
-    bills = get_bills(db, user_id=current_user.id, skip=skip, limit=limit)
+async def read_bills(
+    skip: int = 0, 
+    limit: int = 100, 
+    time_filter: str = "all",  # today, month, year, all
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """获取账单列表，支持时间筛选"""
+    from datetime import datetime, timedelta
+    import calendar
+    
+    now = datetime.now()
+    
+    # 根据时间筛选设置日期范围
+    if time_filter == "today":
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif time_filter == "month":
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_day = calendar.monthrange(now.year, now.month)[1]
+        end_date = now.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
+    elif time_filter == "year":
+        start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_date = now.replace(month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
+    else:  # all
+        start_date = None
+        end_date = None
+    
+    # 获取筛选后的账单
+    bills = get_bills(db, user_id=current_user.id, skip=skip, limit=limit, start_date=start_date, end_date=end_date)
+    
     # 将SQLAlchemy模型转换为Pydantic模型
     bill_schemas = []
     for bill in bills:
@@ -80,16 +109,77 @@ async def read_bills(skip: int = 0, limit: int = 100, current_user = Depends(get
         )
         bill_schemas.append(bill_schema)
     
-    # 获取总数
-    total = get_bills_count(db, user_id=current_user.id)
+    # 获取总数（也需要时间筛选）
+    total = get_bills_count(db, user_id=current_user.id, start_date=start_date, end_date=end_date)
+    
     return success_response(
         data={
             "data": bill_schemas,
             "total": total,
             "skip": skip,
-            "limit": limit
+            "limit": limit,
+            "time_filter": time_filter
         },
         message="获取账单列表成功"
+    )
+
+@app.get("/bills/stats", response_model=BaseResponse)
+async def get_bills_stats(
+    time_filter: str = "month",  # today, month, year, all
+    current_user = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """获取账单统计信息"""
+    from datetime import datetime, timedelta
+    import calendar
+    
+    now = datetime.now()
+    
+    # 根据时间筛选获取账单
+    if time_filter == "today":
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif time_filter == "month":
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_day = calendar.monthrange(now.year, now.month)[1]
+        end_date = now.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
+    elif time_filter == "year":
+        start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        end_date = now.replace(month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
+    else:  # all
+        start_date = None
+        end_date = None
+    
+    # 获取筛选后的账单
+    bills = get_bills(db, user_id=current_user.id, skip=0, limit=10000)  # 获取所有账单用于筛选
+    
+    if start_date and end_date:
+        bills = [bill for bill in bills if start_date <= bill.date <= end_date]
+    
+    # 计算统计信息
+    total_income = sum(bill.amount for bill in bills if bill.type.value == "income")
+    total_expense = sum(bill.amount for bill in bills if bill.type.value == "expense")
+    net_amount = total_income - total_expense
+    bill_count = len(bills)
+    
+    # 按分类统计
+    category_stats = {}
+    for bill in bills:
+        category = bill.category or "未分类"
+        type_label = "收入" if bill.type.value == "income" else "支出"
+        key = f"{type_label}-{category}"
+        category_stats[key] = category_stats.get(key, 0) + bill.amount
+    
+    return success_response(
+        data={
+            "total_income": total_income,
+            "total_expense": total_expense,
+            "net_amount": net_amount,
+            "bill_count": bill_count,
+            "category_stats": category_stats,
+            "time_filter": time_filter
+        },
+        message="获取统计信息成功"
     )
 
 
