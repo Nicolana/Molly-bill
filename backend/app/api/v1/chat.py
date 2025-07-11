@@ -68,7 +68,6 @@ async def chat_with_ai(
         else:
             # 处理文本输入
             ai_response = ai_service.chat(chat_request.message)
-        print(ai_response)
         # 如果AI识别出账单信息，创建账单
         if ai_response.get("bills"):
             ledger_id = chat_request.ledger_id or 1  # 默认账本ID
@@ -95,7 +94,6 @@ async def chat_with_ai(
                 except Exception as e:
                     print(f"创建账单失败: {e}")
                     continue
-        print("output message", ai_response.get("message", "抱歉，我无法理解您的输入。"))
 
         # 保存AI回复到数据库
         ai_message = ChatMessageCreate(
@@ -105,7 +103,6 @@ async def chat_with_ai(
             ledger_id=chat_request.ledger_id or 1
         )
         chat_crud.create_chat_message(db, ai_message, current_user.id)
-        print(current_user.id)
         
         # 构建响应
         response_data = {
@@ -138,8 +135,11 @@ async def get_chat_history(
     """获取聊天历史"""
     try:
         messages = chat_crud.get_recent_chat_messages(db, ledger_id, limit)
-        return success_response([
-            {
+        
+        # 构建响应数据，包含账单详情
+        response_data = []
+        for msg in messages:
+            message_data = {
                 "id": msg.id,
                 "content": msg.content,
                 "message_type": msg.message_type,
@@ -147,9 +147,27 @@ async def get_chat_history(
                 "input_type": msg.input_type,
                 "ai_confidence": msg.ai_confidence,
                 "bill_id": msg.bill_id,
-                "is_processed": msg.is_processed
+                "is_processed": msg.is_processed,
+                "bills": []  # 初始化账单列表
             }
-            for msg in messages
-        ])
+            
+            # 如果消息关联了账单，获取账单详情
+            if msg.bill_id:
+                bill = bill_crud.get_bill(db, msg.bill_id)
+                if bill:
+                    message_data["bills"] = [{
+                        "id": bill.id,
+                        "amount": bill.amount,
+                        "type": bill.type.value,
+                        "category": bill.category,
+                        "description": bill.description,
+                        "date": bill.date.isoformat(),
+                        "owner_id": bill.owner_id,
+                        "ledger_id": bill.ledger_id
+                    }]
+            
+            response_data.append(message_data)
+        
+        return success_response(response_data)
     except Exception as e:
         return error_response(f"获取聊天历史失败: {str(e)}") 

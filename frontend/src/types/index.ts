@@ -43,7 +43,7 @@ export interface ChatMessage {
   type: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  bills?: BillCreate[]; // 如果是AI解析出的账单信息
+  bills?: Bill[]; // 如果是AI解析出的账单信息（完整账单对象）
 }
 
 // 数据库聊天消息类型
@@ -70,7 +70,7 @@ export interface APIChatMessage {
   input_type?: string;
   ai_confidence?: number;
   is_processed: boolean;
-  bills: BillCreate[]; // 关联的账单信息
+  bills: Bill[]; // 关联的账单信息（完整账单对象）
 }
 
 export interface ChatHistoryResponse {

@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChatMessage, BillCreate, APIChatMessage } from '@/types';
+import { ChatMessage, BillCreate, APIChatMessage, Bill } from '@/types';
 import { aiAPI, chatAPI } from '@/lib/api';
 import { Mic, MicOff, Camera, Send, Loader2, Trash2 } from 'lucide-react';
 import BillCard from './BillCard';
@@ -13,7 +13,7 @@ import 'dayjs/locale/zh-cn';
 
 
 interface ChatInterfaceProps {
-  onBillsCreated?: (bills: BillCreate[]) => void;
+  onBillsCreated?: (bills: Bill[]) => void;
 }
 
 export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
@@ -46,7 +46,7 @@ export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
         type: dbMsg.message_type as 'user' | 'assistant',
         content: dbMsg.content,
         timestamp: new Date(dbMsg.timestamp),
-        bills: dbMsg.bills || [] // 使用后端返回的账单信息
+        bills: dbMsg.bills || [] // 使用后端返回的完整账单信息
       }));
 
       console.log(convertedMessages);
@@ -94,19 +94,19 @@ export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
   }, [messages, isLoadingHistory]);
 
   // 添加消息到聊天（本地状态）
-  const addMessage = (content: string, type: 'user' | 'assistant', bills?: BillCreate[]) => {
+  const addMessage = (content: string, type: 'user' | 'assistant', bills?: Bill[] | BillCreate[]) => {
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
       type,
       content,
       timestamp: new Date(),
-      bills,
+      bills: bills as Bill[],
     };
     setMessages(prev => [...prev, newMessage]);
     
     // 如果有新账单创建，通知父组件
     if (bills && bills.length > 0 && onBillsCreated) {
-      onBillsCreated(bills);
+      onBillsCreated(bills as Bill[]);
     }
   };
 
