@@ -6,6 +6,7 @@ import re
 from app.db.database import get_db
 from app.models import User, Invitation, InvitationStatus, UserRole
 from app.schemas.invitation import InvitationCreate, InvitationResponse
+from app.schemas.base import BaseResponse
 from app.core.security.auth import get_current_user
 from app.crud.invitation import (
     create_invitation, get_invitation, get_ledger_invitations,
@@ -14,10 +15,11 @@ from app.crud.invitation import (
 )
 from app.crud.ledger import check_user_ledger_admin, check_user_ledger_access
 from app.crud.user import get_user_by_email
+from app.utils.response import success_response, error_response
 
 router = APIRouter()
 
-@router.post("/", response_model=InvitationResponse)
+@router.post("/", response_model=BaseResponse)
 def create_new_invitation(
     invitation: InvitationCreate,
     current_user: User = Depends(get_current_user),
@@ -74,9 +76,13 @@ def create_new_invitation(
             detail="该用户已有待处理的邀请"
         )
     
-    return create_invitation(db=db, invitation=invitation, inviter_id=current_user.id)
+    new_invitation = create_invitation(db=db, invitation=invitation, inviter_id=current_user.id)
+    return success_response(
+        data=InvitationResponse.model_validate(new_invitation),
+        message="邀请创建成功"
+    )
 
-@router.get("/ledger/{ledger_id}", response_model=List[InvitationResponse])
+@router.get("/ledger/{ledger_id}", response_model=BaseResponse)
 def get_ledger_invitations_list(
     ledger_id: int,
     current_user: User = Depends(get_current_user),
@@ -113,9 +119,12 @@ def get_ledger_invitations_list(
         }
         result.append(invitation_dict)
     
-    return result
+    return success_response(
+        data=result,
+        message="获取账本邀请列表成功"
+    )
 
-@router.get("/pending", response_model=List[InvitationResponse])
+@router.get("/pending", response_model=BaseResponse)
 def get_my_pending_invitations(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -149,9 +158,12 @@ def get_my_pending_invitations(
         }
         result.append(invitation_dict)
     
-    return result
+    return success_response(
+        data=result,
+        message="获取待处理邀请列表成功"
+    )
 
-@router.post("/{invitation_id}/accept")
+@router.post("/{invitation_id}/accept", response_model=BaseResponse)
 def accept_invitation_endpoint(
     invitation_id: int,
     current_user: User = Depends(get_current_user),
@@ -159,14 +171,14 @@ def accept_invitation_endpoint(
 ):
     """接受邀请"""
     if accept_invitation(db, invitation_id, current_user.id):
-        return {"message": "邀请已接受"}
+        return success_response(message="邀请已接受")
     
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="无法接受邀请"
     )
 
-@router.post("/{invitation_id}/reject")
+@router.post("/{invitation_id}/reject", response_model=BaseResponse)
 def reject_invitation_endpoint(
     invitation_id: int,
     current_user: User = Depends(get_current_user),
@@ -174,14 +186,14 @@ def reject_invitation_endpoint(
 ):
     """拒绝邀请"""
     if reject_invitation(db, invitation_id):
-        return {"message": "邀请已拒绝"}
+        return success_response(message="邀请已拒绝")
     
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="邀请不存在"
     )
 
-@router.delete("/{invitation_id}")
+@router.delete("/{invitation_id}", response_model=BaseResponse)
 def cancel_invitation_endpoint(
     invitation_id: int,
     current_user: User = Depends(get_current_user),
@@ -189,7 +201,7 @@ def cancel_invitation_endpoint(
 ):
     """取消邀请（仅邀请人）"""
     if cancel_invitation(db, invitation_id, current_user.id):
-        return {"message": "邀请已取消"}
+        return success_response(message="邀请已取消")
     
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
