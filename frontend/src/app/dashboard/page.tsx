@@ -28,10 +28,12 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       const response = await billsAPI.getBills(0, 1000, timeFilter); // 传递时间筛选参数
+      console.log("bills", response)
       
       if (response.data.success && response.data.data) {
         const paginatedData = response.data.data;
-        setBills(paginatedData.data || []);
+        console.log("获取到的bill 列表", paginatedData)
+        setBills(paginatedData || []);
       } else {
         setError(response.data.message || '获取账单失败');
       }

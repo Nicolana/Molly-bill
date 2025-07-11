@@ -72,7 +72,7 @@ export const authAPI = {
 
 // 账单相关API
 export const billsAPI = {
-  getBills: (skip?: number, limit?: number, timeFilter?: string) => api.get<BaseResponse<PaginatedResponse<Bill>>>('/bills/', {
+  getBills: (skip?: number, limit?: number, timeFilter?: string) => api.get<PaginatedResponse<Bill>>('/bills/', {
     params: { skip, limit, time_filter: timeFilter, ledger_id: 1 }
   }),
   createBill: (data: BillCreate) => api.post<BaseResponse<Bill>>('/bills/', data),
