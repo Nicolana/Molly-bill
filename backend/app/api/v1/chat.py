@@ -38,6 +38,7 @@ async def chat_with_ai(
         # 处理不同类型的输入
         ai_response = None
         bills_created = []
+        print(chat_request)
         
         if chat_request.audio:
             # 处理音频输入
@@ -67,7 +68,7 @@ async def chat_with_ai(
         else:
             # 处理文本输入
             ai_response = ai_service.chat(chat_request.message)
-        
+        print(ai_response)
         # 如果AI识别出账单信息，创建账单
         if ai_response.get("bills"):
             ledger_id = chat_request.ledger_id or 1  # 默认账本ID
@@ -108,14 +109,21 @@ async def chat_with_ai(
         response_data = {
             "message": ai_response.get("message", "抱歉，我无法理解您的输入。"),
             "user_id": current_user.id,
-            "bills": [bill.id for bill in bills_created] if bills_created else None,
+            "bills": [{"id": bill.id} for bill in bills_created] if bills_created else None,
             "confidence": ai_response.get("confidence")
         }
         
         return success_response(ChatResponse(**response_data))
         
     except Exception as e:
-        return error_response(f"AI服务错误: {str(e)}")
+        # 确保在异常情况下也返回正确的响应格式
+        error_response_data = {
+            "message": f"AI服务错误: {str(e)}",
+            "user_id": current_user.id,
+            "bills": None,
+            "confidence": None
+        }
+        return error_response(f"AI服务错误: {str(e)}", data=ChatResponse(**error_response_data))
 
 @router.get("/history/{ledger_id}")
 async def get_chat_history(

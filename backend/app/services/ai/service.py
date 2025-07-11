@@ -8,9 +8,10 @@ from dashscope import MultiModalConversation
 from dashscope.audio.asr import Recognition
 from pydub import AudioSegment
 import json
+from app.core.config.settings import settings
 
 # 设置阿里百练API密钥
-dashscope.api_key = os.getenv("DASHSCOPE_API_KEY", "your-dashscope-api-key")
+dashscope.api_key = settings.dashscope_api_key or "your-dashscope-api-key"
 
 class AIService:
     def __init__(self):
@@ -101,6 +102,7 @@ class AIService:
                 result_format='message',
                 response_format={"type": "json_object"}
             )
+            print(response)
             
             if response.status_code == 200:
                 content = response.output.choices[0].message.content
@@ -119,6 +121,11 @@ class AIService:
                         "has_bill": False,
                         "message": content
                     }
+            elif response.status_code == 401:
+                return {
+                    "has_bill": False,
+                    "message": "抱歉，系统错误，请先配置API密钥"
+                }
             else:
                 return {
                     "has_bill": False,
