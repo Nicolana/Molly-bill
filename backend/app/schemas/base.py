@@ -5,10 +5,14 @@ from enum import Enum
 from app.models import BillType
 
 # 统一响应格式
-class BaseResponse(BaseModel):
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
+
+class BaseResponse(BaseModel, Generic[T]):
     success: bool
     message: str
-    data: Optional[Any] = None
+    data: Optional[T] = None
     error_code: Optional[str] = None
 
 class PaginatedResponse(BaseModel):

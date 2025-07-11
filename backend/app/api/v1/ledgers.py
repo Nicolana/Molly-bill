@@ -5,6 +5,7 @@ from typing import List
 from app.db.database import get_db
 from app.models import User, Ledger, UserLedger, UserRole
 from app.schemas.ledger import LedgerCreate, LedgerResponse, LedgerUpdate
+from app.schemas.base import BaseResponse
 from app.core.security.auth import get_current_user
 from app.crud.ledger import (
     create_ledger, get_user_ledgers, get_ledger, get_ledger_members,
@@ -15,22 +16,26 @@ from app.crud.user import get_user_by_email
 
 router = APIRouter()
 
-@router.post("/", response_model=LedgerResponse)
+@router.post("/", response_model=BaseResponse[LedgerResponse])
 def create_new_ledger(
     ledger: LedgerCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """创建新账本"""
-    return create_ledger(db=db, ledger=ledger, owner_id=current_user.id)
+    new_ledger = create_ledger(db=db, ledger=ledger, owner_id=current_user.id)
+    return BaseResponse(
+        success=True,
+        message="账本创建成功",
+        data=new_ledger
+    )
 
-@router.get("/my", response_model=List[dict])
+@router.get("/my", response_model=BaseResponse[List[dict]])
 def get_my_ledgers(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """获取我的账本列表"""
-    from app.schemas.base import BaseResponse
     user_ledgers = get_user_ledgers(db, current_user.id)
     
     # 返回包含用户账本关系的完整信息
@@ -55,9 +60,13 @@ def get_my_ledgers(
             }
         })
     
-    return result
+    return BaseResponse(
+        success=True,
+        message="获取账本列表成功",
+        data=result
+    )
 
-@router.get("/current")
+@router.get("/current", response_model=BaseResponse[dict])
 def get_current_ledger(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -66,16 +75,26 @@ def get_current_ledger(
     # 检查用户是否有当前选中的账本ID（可以存储在用户表的字段中，或者返回第一个）
     user_ledgers = get_user_ledgers(db, current_user.id)
     if not user_ledgers:
-        return {"current_ledger_id": None}
+        return BaseResponse(
+            success=True,
+            message="暂无账本",
+            data={"current_ledger_id": None}
+        )
     
     # 暂时返回第一个账本，后续可以添加用户偏好设置
     current_ledger_id = getattr(current_user, 'current_ledger_id', None)
     if current_ledger_id and any(ul.ledger_id == current_ledger_id for ul in user_ledgers):
-        return {"current_ledger_id": current_ledger_id}
+        data = {"current_ledger_id": current_ledger_id}
+    else:
+        data = {"current_ledger_id": user_ledgers[0].ledger_id}
     
-    return {"current_ledger_id": user_ledgers[0].ledger_id}
+    return BaseResponse(
+        success=True,
+        message="获取当前账本成功",
+        data=data
+    )
 
-@router.post("/current/{ledger_id}")
+@router.post("/current/{ledger_id}", response_model=BaseResponse[dict])
 def set_current_ledger(
     ledger_id: int,
     current_user: User = Depends(get_current_user),
@@ -91,9 +110,13 @@ def set_current_ledger(
     
     # 更新用户的当前账本ID（需要在User模型中添加current_ledger_id字段）
     # 暂时返回成功，后续可以添加数据库字段存储
-    return {"message": "当前账本已更新", "current_ledger_id": ledger_id}
+    return BaseResponse(
+        success=True,
+        message="当前账本已更新",
+        data={"current_ledger_id": ledger_id}
+    )
 
-@router.get("/{ledger_id}", response_model=LedgerResponse)
+@router.get("/{ledger_id}", response_model=BaseResponse[LedgerResponse])
 def get_ledger_info(
     ledger_id: int,
     current_user: User = Depends(get_current_user),
@@ -114,9 +137,13 @@ def get_ledger_info(
             detail="账本不存在"
         )
     
-    return ledger
+    return BaseResponse(
+        success=True,
+        message="获取账本信息成功",
+        data=ledger
+    )
 
-@router.put("/{ledger_id}", response_model=LedgerResponse)
+@router.put("/{ledger_id}", response_model=BaseResponse[LedgerResponse])
 def update_ledger(
     ledger_id: int,
     ledger_update: LedgerUpdate,
@@ -144,9 +171,13 @@ def update_ledger(
     
     db.commit()
     db.refresh(ledger)
-    return ledger
+    return BaseResponse(
+        success=True,
+        message="账本更新成功",
+        data=ledger
+    )
 
-@router.post("/{ledger_id}/transfer")
+@router.post("/{ledger_id}/transfer", response_model=BaseResponse[dict])
 def transfer_ledger(
     ledger_id: int,
     new_owner_email: str,
@@ -178,14 +209,18 @@ def transfer_ledger(
     
     # 转让所有权
     if transfer_ledger_ownership(db, ledger_id, new_owner.id):
-        return {"message": "账本转让成功"}
+        return BaseResponse(
+            success=True,
+            message="账本转让成功",
+            data={}
+        )
     
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="转让失败"
     )
 
-@router.delete("/{ledger_id}")
+@router.delete("/{ledger_id}", response_model=BaseResponse[dict])
 def delete_ledger_endpoint(
     ledger_id: int,
     current_user: User = Depends(get_current_user),
@@ -200,14 +235,18 @@ def delete_ledger_endpoint(
         )
     
     if delete_ledger(db, ledger_id):
-        return {"message": "账本已删除"}
+        return BaseResponse(
+            success=True,
+            message="账本已删除",
+            data={}
+        )
     
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="账本不存在"
     )
 
-@router.post("/{ledger_id}/restore")
+@router.post("/{ledger_id}/restore", response_model=BaseResponse[dict])
 def restore_ledger_endpoint(
     ledger_id: int,
     current_user: User = Depends(get_current_user),
@@ -222,14 +261,18 @@ def restore_ledger_endpoint(
         )
     
     if restore_ledger(db, ledger_id):
-        return {"message": "账本已恢复"}
+        return BaseResponse(
+            success=True,
+            message="账本已恢复",
+            data={}
+        )
     
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail="账本不存在或无法恢复"
     )
 
-@router.delete("/{ledger_id}/permanent")
+@router.delete("/{ledger_id}/permanent", response_model=BaseResponse[dict])
 def permanently_delete_ledger_endpoint(
     ledger_id: int,
     current_user: User = Depends(get_current_user),
@@ -244,7 +287,11 @@ def permanently_delete_ledger_endpoint(
         )
     
     if permanently_delete_ledger(db, ledger_id):
-        return {"message": "账本已永久删除"}
+        return BaseResponse(
+            success=True,
+            message="账本已永久删除",
+            data={}
+        )
     
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
