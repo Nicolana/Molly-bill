@@ -12,11 +12,11 @@ from app.core.security.auth import get_current_user
 from app.services.ai.service import ai_service
 from app.crud import chat as chat_crud
 from app.crud import bill as bill_crud
-from app.utils.response import success_response, error_response
+from app.utils.response import BaseResponse, success_response, error_response
 
 router = APIRouter()
 
-@router.post("/", response_model=ChatResponse)
+@router.post("/", response_model=BaseResponse)
 async def chat_with_ai(
     chat_request: ChatRequest,
     current_user: User = Depends(get_current_user),
@@ -95,7 +95,8 @@ async def chat_with_ai(
                 except Exception as e:
                     print(f"创建账单失败: {e}")
                     continue
-        
+        print("output message", ai_response.get("message", "抱歉，我无法理解您的输入。"))
+
         # 保存AI回复到数据库
         ai_message = ChatMessageCreate(
             content=ai_response.get("message", "抱歉，我无法理解您的输入。"),
@@ -104,6 +105,7 @@ async def chat_with_ai(
             ledger_id=chat_request.ledger_id or 1
         )
         chat_crud.create_chat_message(db, ai_message, current_user.id)
+        print(current_user.id)
         
         # 构建响应
         response_data = {
