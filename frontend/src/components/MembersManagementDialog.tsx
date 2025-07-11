@@ -7,6 +7,7 @@ import { ledgersAPI, invitationsAPI } from '@/lib/api';
 import { Users, Crown, User, Mail, Clock, CheckCircle, XCircle, Trash2, UserX, RefreshCw } from 'lucide-react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
+import { InvitationStatus, UserRole } from '@/constants/enums';
 
 interface MembersManagementDialogProps {
   open: boolean;
@@ -27,7 +28,7 @@ export default function MembersManagementDialog({
   const [error, setError] = useState('');
 
   const ledgerId = userLedger?.ledger?.id;
-  const isAdmin = userLedger?.role === 'ADMIN';
+  const isAdmin = userLedger?.role === UserRole.ADMIN;
 
   // 获取成员列表
   const fetchMembers = async () => {
@@ -162,7 +163,7 @@ export default function MembersManagementDialog({
 
   // 根据角色获取角色显示信息
   const getRoleDisplay = (role: string) => {
-    if (role === 'ADMIN') {
+    if (role === UserRole.ADMIN) {
       return { text: '管理员', icon: <Crown className="h-4 w-4 text-yellow-500" />, color: 'text-yellow-600' };
     }
     return { text: '成员', icon: <User className="h-4 w-4 text-blue-500" />, color: 'text-blue-600' };
@@ -171,13 +172,13 @@ export default function MembersManagementDialog({
   // 获取邀请状态显示信息
   const getInvitationStatusDisplay = (status: string) => {
     switch (status) {
-      case 'PENDING':
+      case InvitationStatus.PENDING:
         return { text: '待处理', icon: <Clock className="h-4 w-4 text-yellow-500" />, color: 'text-yellow-600' };
-      case 'ACCEPTED':
+      case InvitationStatus.ACCEPTED:
         return { text: '已接受', icon: <CheckCircle className="h-4 w-4 text-green-500" />, color: 'text-green-600' };
-      case 'REJECTED':
+      case InvitationStatus.REJECTED:
         return { text: '已拒绝', icon: <XCircle className="h-4 w-4 text-red-500" />, color: 'text-red-600' };
-      case 'EXPIRED':
+      case InvitationStatus.EXPIRED:
         return { text: '已过期', icon: <XCircle className="h-4 w-4 text-gray-500" />, color: 'text-gray-600' };
       default:
         return { text: status, icon: null, color: 'text-gray-600' };
@@ -244,7 +245,7 @@ export default function MembersManagementDialog({
                     
                     {isAdmin && member.user_id !== userLedger.user_id && (
                       <div className="flex items-center space-x-2">
-                        {member.role === 'MEMBER' && (
+                        {member.role === UserRole.MEMBER && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -277,7 +278,7 @@ export default function MembersManagementDialog({
         <div>
           <h3 className="text-md font-medium mb-3 flex items-center space-x-2">
             <Mail className="h-4 w-4" />
-            <span>待处理邀请 ({invitations.filter(inv => inv.status === 'PENDING').length})</span>
+            <span>待处理邀请 ({invitations.filter(inv => inv.status === InvitationStatus.PENDING).length})</span>
           </h3>
           
           {invitations.length === 0 ? (
@@ -307,7 +308,7 @@ export default function MembersManagementDialog({
                           <span>•</span>
                           <span>邀请于 {dayjs(invitation.created_at).format('MM/DD HH:mm')}</span>
                         </div>
-                        {invitation.status === 'PENDING' && (
+                        {invitation.status === InvitationStatus.PENDING && (
                           <p className="text-xs text-orange-600">
                             过期时间: {dayjs(invitation.expires_at).format('MM/DD HH:mm')}
                           </p>
@@ -315,7 +316,7 @@ export default function MembersManagementDialog({
                       </div>
                     </div>
                     
-                    {isAdmin && invitation.status === 'PENDING' && (
+                    {isAdmin && invitation.status === InvitationStatus.PENDING && (
                       <Button
                         variant="outline"
                         size="sm"
