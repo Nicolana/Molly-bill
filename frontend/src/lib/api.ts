@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { User, Bill, BillCreate, AuthResponse, LoginForm, RegisterForm, ChatRequest, ChatResponse, DBChatMessage, ChatHistoryResponse } from '@/types';
+import { User, Bill, BillCreate, AuthResponse, LoginForm, RegisterForm, ChatRequest, ChatResponse, DBChatMessage, ChatHistoryResponse, Ledger, LedgerCreate, UserLedger, Invitation, InvitationCreate } from '@/types';
 
 // 统一响应格式接口
 interface BaseResponse<T = unknown> {
@@ -72,8 +72,8 @@ export const authAPI = {
 
 // 账单相关API
 export const billsAPI = {
-  getBills: (skip?: number, limit?: number, timeFilter?: string) => api.get<PaginatedResponse<Bill>>('/bills/', {
-    params: { skip, limit, time_filter: timeFilter, ledger_id: 1 }
+  getBills: (skip?: number, limit?: number, timeFilter?: string, ledgerId?: number) => api.get<PaginatedResponse<Bill>>('/bills/', {
+    params: { skip, limit, time_filter: timeFilter, ledger_id: ledgerId }
   }),
   createBill: (data: BillCreate) => api.post<BaseResponse<Bill>>('/bills/', data),
   deleteBill: (id: number) => api.delete<BaseResponse>(`/bills/${id}`),
@@ -102,6 +102,54 @@ export const aiAPI = {
   // 获取聊天历史
   getChatHistory: (ledgerId: number, skip: number = 0, limit: number = 50) => 
     api.get<BaseResponse<DBChatMessage[]>>(`/chat/history/${ledgerId}?skip=${skip}&limit=${limit}`),
+};
+
+// 账本相关API
+export const ledgersAPI = {
+  // 获取用户的账本列表
+  getUserLedgers: () => api.get<BaseResponse<UserLedger[]>>('/ledgers/my'),
+  
+  // 创建新账本
+  createLedger: (data: LedgerCreate) => api.post<BaseResponse<Ledger>>('/ledgers/', data),
+  
+  // 获取账本详情
+  getLedger: (id: number) => api.get<BaseResponse<Ledger>>(`/ledgers/${id}`),
+  
+  // 更新账本信息
+  updateLedger: (id: number, data: Partial<LedgerCreate>) => api.put<BaseResponse<Ledger>>(`/ledgers/${id}`, data),
+  
+  // 删除账本（软删除）
+  deleteLedger: (id: number) => api.delete<BaseResponse>(`/ledgers/${id}`),
+  
+  // 获取账本成员
+  getLedgerMembers: (id: number) => api.get<BaseResponse<UserLedger[]>>(`/ledgers/${id}/members`),
+  
+  // 移除账本成员
+  removeMember: (ledgerId: number, userId: number) => api.delete<BaseResponse>(`/ledgers/${ledgerId}/members/${userId}`),
+  
+  // 转移账本所有权
+  transferOwnership: (ledgerId: number, newOwnerId: number) => api.post<BaseResponse>(`/ledgers/${ledgerId}/transfer`, { new_owner_id: newOwnerId }),
+};
+
+// 邀请相关API
+export const invitationsAPI = {
+  // 创建邀请
+  createInvitation: (data: InvitationCreate) => api.post<BaseResponse<Invitation>>('/invitations/', data),
+  
+  // 获取账本的邀请列表
+  getLedgerInvitations: (ledgerId: number) => api.get<BaseResponse<Invitation[]>>(`/invitations/ledger/${ledgerId}`),
+  
+  // 获取用户的待处理邀请
+  getPendingInvitations: () => api.get<BaseResponse<Invitation[]>>('/invitations/pending'),
+  
+  // 接受邀请
+  acceptInvitation: (invitationId: number) => api.post<BaseResponse>(`/invitations/${invitationId}/accept`),
+  
+  // 拒绝邀请
+  rejectInvitation: (invitationId: number) => api.post<BaseResponse>(`/invitations/${invitationId}/reject`),
+  
+  // 取消邀请
+  cancelInvitation: (invitationId: number) => api.delete<BaseResponse>(`/invitations/${invitationId}`),
 };
 
 export default api; 

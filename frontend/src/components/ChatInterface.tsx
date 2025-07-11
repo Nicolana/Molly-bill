@@ -14,9 +14,10 @@ import 'dayjs/locale/zh-cn';
 
 interface ChatInterfaceProps {
   onBillsCreated?: (bills: Bill[]) => void;
+  selectedLedgerId?: number;
 }
 
-export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
+export default function ChatInterface({ onBillsCreated, selectedLedgerId }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -28,10 +29,11 @@ export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
 
   // 加载历史聊天记录
   const loadChatHistory = async () => {
+    if (!selectedLedgerId) return; // 如果没有选中账本，不加载历史
+    
     try {
       setIsLoadingHistory(true);
-      // 使用新的API路径，默认账本ID为1
-      const response = await aiAPI.getChatHistory(1, 0, 100);
+      const response = await aiAPI.getChatHistory(selectedLedgerId, 0, 100);
       
       // 检查统一返回格式
       if (!response.data?.success) {
@@ -80,8 +82,9 @@ export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
   };
 
   useEffect(() => {
+    setMessages([]); // 清空当前消息
     loadChatHistory();
-  }, []);
+  }, [selectedLedgerId]);
 
   useEffect(() => {
     // 只有在有新消息时才滚动到底部，避免初始化时的闪烁

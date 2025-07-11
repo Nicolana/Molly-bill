@@ -91,4 +91,53 @@ export interface ChatResponse {
   confidence?: number;
 }
 
+// 账本相关类型
+export interface Ledger {
+  id: number;
+  name: string;
+  description?: string;
+  currency: string;
+  timezone: string;
+  status: 'ACTIVE' | 'DELETED';
+  created_at: string;
+  deleted_at?: string;
+}
+
+export interface LedgerCreate {
+  name: string;
+  description?: string;
+  currency?: string;
+  timezone?: string;
+}
+
+export interface UserLedger {
+  id: number;
+  user_id: number;
+  ledger_id: number;
+  role: 'ADMIN' | 'MEMBER';
+  joined_at: string;
+  status: string;
+  user?: User;
+  ledger?: Ledger;
+}
+
+// 邀请相关类型
+export interface Invitation {
+  id: number;
+  ledger_id: number;
+  inviter_id: number;
+  invitee_email: string;
+  role: 'ADMIN' | 'MEMBER';
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+  expires_at: string;
+  created_at: string;
+  accepted_at?: string;
+}
+
+export interface InvitationCreate {
+  ledger_id: number;
+  invitee_email: string;
+  role?: 'ADMIN' | 'MEMBER';
+}
+
  

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, BarChart3, LogOut, Menu, X } from 'lucide-react';
+import { MessageSquare, BarChart3, LogOut, Menu, X, BookOpen } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -51,24 +51,14 @@ export default function TopNavigation() {
                 <span>仪表盘</span>
               </Button>
             </Link>
-            <Link href="/dashboard/chat">
+            <Link href="/dashboard/ledgers">
               <Button
-                variant={isActive('/dashboard/chat') ? 'default' : 'ghost'}
+                variant={isActive('/dashboard/ledgers') ? 'default' : 'ghost'}
                 size="sm"
                 className="flex items-center space-x-2"
               >
-                <MessageSquare className="h-4 w-4" />
-                <span>AI助手</span>
-              </Button>
-            </Link>
-            <Link href="/dashboard/bills">
-              <Button
-                variant={isActive('/dashboard/bills') ? 'default' : 'ghost'}
-                size="sm"
-                className="flex items-center space-x-2"
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span>账单记录</span>
+                <BookOpen className="h-4 w-4" />
+                <span>账本管理</span>
               </Button>
             </Link>
           </nav>
@@ -127,6 +117,17 @@ export default function TopNavigation() {
                 >
                   <BarChart3 className="h-4 w-4" />
                   <span>账单记录</span>
+                </Button>
+              </Link>
+              <Link href="/dashboard/ledgers">
+                <Button
+                  variant={isActive('/dashboard/ledgers') ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center space-x-2 justify-start w-full"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>账本管理</span>
                 </Button>
               </Link>
             </div>

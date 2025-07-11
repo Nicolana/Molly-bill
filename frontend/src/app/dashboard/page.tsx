@@ -11,6 +11,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import ChatInterface from '@/components/ChatInterface';
 import CalendarView from '@/components/CalendarView';
 import BillList from '@/components/BillList';
+import LedgerSelector from '@/components/LedgerSelector';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
@@ -22,12 +23,15 @@ export default function DashboardPage() {
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'month' | 'year'>('month'); // 新增时间筛选
+  const [selectedLedgerId, setSelectedLedgerId] = useState<number | undefined>(undefined);
 
   // 获取账单列表
   const fetchBills = async () => {
+    if (!selectedLedgerId) return; // 如果没有选中账本，不获取账单
+    
     try {
       setLoading(true);
-      const response = await billsAPI.getBills(0, 1000, timeFilter); // 传递时间筛选参数
+      const response = await billsAPI.getBills(0, 1000, timeFilter, selectedLedgerId); // 传递账本ID
       console.log("bills", response)
       
       if (response.data.success && response.data.data) {
@@ -69,7 +73,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchBills();
-  }, [timeFilter]); // 当时间筛选改变时重新获取数据
+  }, [timeFilter, selectedLedgerId]); // 当时间筛选或账本改变时重新获取数据
+
+  // 处理账本切换
+  const handleLedgerChange = (ledgerId: number) => {
+    setSelectedLedgerId(ledgerId);
+    setBills([]); // 清空当前账单数据
+  };
 
   // 计算统计数据
   const totalAmount = bills.reduce((sum, bill) => {
@@ -207,13 +217,23 @@ export default function DashboardPage() {
           <div className="w-1/2 border-r border-gray-200">
             <Card className="h-full rounded-none border-0">
               <CardHeader className="border-b">
-                <CardTitle className="flex items-center space-x-2">
-                  <MessageSquare className="h-5 w-5" />
-                  <span>AI记账助手</span>
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center space-x-2">
+                    <MessageSquare className="h-5 w-5" />
+                    <span>AI记账助手</span>
+                  </CardTitle>
+                  <LedgerSelector 
+                    selectedLedgerId={selectedLedgerId}
+                    onLedgerChange={handleLedgerChange}
+                    className="ml-4"
+                  />
+                </div>
               </CardHeader>
               <CardContent className="h-[calc(100%-80px)] p-0">
-                <ChatInterface onBillsCreated={handleBillsCreated} />
+                <ChatInterface 
+                  onBillsCreated={handleBillsCreated} 
+                  selectedLedgerId={selectedLedgerId}
+                />
               </CardContent>
             </Card>
           </div>
