@@ -1,37 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime
 
 from app.db.database import get_db
 from app.models import User, Bill
-from app.schemas.bill import BillCreate, BillResponse, BillUpdate
+from app.schemas.bill import BillResponse, BillUpdate
+from app.schemas.base import BaseResponse, PaginatedResponse
 from app.core.security.auth import get_current_user
 from app.crud.bill import (
-    get_bills, get_bills_count, create_bill, get_bill,
+    get_bills, get_bills_count, get_bill,
     update_bill, delete_bill
 )
 from app.crud.ledger import check_user_ledger_access
+from app.utils.response import success_response, error_response, paginated_response
 
 router = APIRouter()
 
-@router.post("/", response_model=BillResponse)
-def create_new_bill(
-    bill: BillCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """创建新账单"""
-    # 检查用户是否有账本访问权限
-    if not check_user_ledger_access(db, current_user.id, bill.ledger_id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权限访问此账本"
-        )
-    
-    return create_bill(db=db, bill=bill, user_id=current_user.id)
-
-@router.get("/", response_model=List[BillResponse])
+@router.get("/", response_model=PaginatedResponse)
 def get_ledger_bills(
     ledger_id: int,
     skip: int = Query(0, ge=0),
@@ -49,9 +35,18 @@ def get_ledger_bills(
             detail="无权限访问此账本"
         )
     
-    return get_bills(db, ledger_id, skip, limit, start_date, end_date)
+    bills = get_bills(db, ledger_id, skip, limit, start_date, end_date)
+    total = get_bills_count(db, ledger_id, start_date, end_date)
+    
+    return paginated_response(
+        data=bills,
+        total=total,
+        skip=skip,
+        limit=limit,
+        message="获取账单列表成功"
+    )
 
-@router.get("/count")
+@router.get("/count", response_model=BaseResponse)
 def get_ledger_bills_count(
     ledger_id: int,
     start_date: Optional[datetime] = Query(None),
@@ -68,9 +63,12 @@ def get_ledger_bills_count(
         )
     
     count = get_bills_count(db, ledger_id, start_date, end_date)
-    return {"count": count}
+    return success_response(
+        data={"count": count},
+        message="获取账单总数成功"
+    )
 
-@router.get("/{bill_id}", response_model=BillResponse)
+@router.get("/{bill_id}", response_model=BaseResponse)
 def get_bill_info(
     bill_id: int,
     current_user: User = Depends(get_current_user),
@@ -91,9 +89,12 @@ def get_bill_info(
             detail="无权限访问此账单"
         )
     
-    return bill
+    return success_response(
+        data=bill,
+        message="获取账单信息成功"
+    )
 
-@router.put("/{bill_id}", response_model=BillResponse)
+@router.put("/{bill_id}", response_model=BaseResponse)
 def update_bill_info(
     bill_id: int,
     bill_update: BillUpdate,
@@ -108,9 +109,12 @@ def update_bill_info(
             detail="账单不存在或无权限修改"
         )
     
-    return updated_bill
+    return success_response(
+        data=updated_bill,
+        message="账单更新成功"
+    )
 
-@router.delete("/{bill_id}")
+@router.delete("/{bill_id}", response_model=BaseResponse)
 def delete_bill_endpoint(
     bill_id: int,
     current_user: User = Depends(get_current_user),
@@ -118,7 +122,10 @@ def delete_bill_endpoint(
 ):
     """删除账单（仅账单创建者）"""
     if delete_bill(db, bill_id, current_user.id):
-        return {"message": "账单已删除"}
+        return success_response(
+            data={"message": "账单已删除"},
+            message="账单删除成功"
+        )
     
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
