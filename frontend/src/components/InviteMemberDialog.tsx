@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InvitationCreate } from '@/types';
+import { UserRole, ROLE_DISPLAY } from '@/constants/enums';
 import { UserPlus, Mail, Shield, User } from 'lucide-react';
 
 interface InviteMemberDialogProps {
@@ -18,10 +19,12 @@ export default function InviteMemberDialog({ open, onClose, onSubmit, ledgerId }
   const [formData, setFormData] = useState<InvitationCreate>({
     ledger_id: 0,
     invitee_email: '',
-    role: 'MEMBER'
+    role: UserRole.MEMBER
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  console.log('InviteMemberDialog props:', { open, ledgerId });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,10 +61,13 @@ export default function InviteMemberDialog({ open, onClose, onSubmit, ledgerId }
       setFormData({
         ledger_id: 0,
         invitee_email: '',
-        role: 'MEMBER'
+        role: UserRole.MEMBER
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '发送邀请失败');
+    } catch (err: any) {
+      console.error('发送邀请失败:', err);
+      // 提取后端返回的详细错误信息
+      const errorMessage = err.response?.data?.detail || err.message || '发送邀请失败';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -71,7 +77,7 @@ export default function InviteMemberDialog({ open, onClose, onSubmit, ledgerId }
     setFormData({
       ledger_id: 0,
       invitee_email: '',
-      role: 'MEMBER'
+      role: UserRole.MEMBER
     });
     setError('');
     onClose();
@@ -121,29 +127,29 @@ export default function InviteMemberDialog({ open, onClose, onSubmit, ledgerId }
               id="role"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as 'ADMIN' | 'MEMBER' })}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
             >
-              <option value="MEMBER">
+              <option value={UserRole.MEMBER}>
                 成员 - 可以查看和记录账单
               </option>
-              <option value="ADMIN">
+              <option value={UserRole.ADMIN}>
                 管理员 - 可以管理账本和邀请其他成员
               </option>
             </select>
             
             <div className="mt-2 p-3 bg-blue-50 rounded-lg">
               <div className="flex items-start space-x-2">
-                {formData.role === 'ADMIN' ? (
+                {formData.role === UserRole.ADMIN ? (
                   <Shield className="h-4 w-4 text-orange-500 mt-0.5" />
                 ) : (
                   <User className="h-4 w-4 text-blue-500 mt-0.5" />
                 )}
                 <div className="text-sm">
                   <p className="font-medium text-gray-900">
-                    {formData.role === 'ADMIN' ? '管理员权限' : '成员权限'}
+                    {formData.role === UserRole.ADMIN ? '管理员权限' : '成员权限'}
                   </p>
                   <p className="text-gray-600">
-                    {formData.role === 'ADMIN' 
+                    {formData.role === UserRole.ADMIN 
                       ? '可以编辑账本信息、邀请/移除成员、管理账单记录' 
                       : '可以查看账本信息、记录和编辑自己的账单'
                     }

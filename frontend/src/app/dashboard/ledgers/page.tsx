@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Plus, Settings, Users, Crown, UserPlus, MoreVertical, Trash2, Edit, Calendar } from 'lucide-react';
 import { UserLedger, Ledger, LedgerCreate, Invitation, InvitationCreate } from '@/types';
+import { UserRole, LedgerStatus, ROLE_DISPLAY, LEDGER_STATUS_DISPLAY } from '@/constants/enums';
 import { ledgersAPI, invitationsAPI } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useLedgerStore } from '@/store/ledger';
@@ -63,10 +64,10 @@ export default function LedgersPage() {
 
   // 更新账本
   const handleUpdateLedger = async (data: Partial<LedgerCreate>) => {
-    if (!selectedLedger?.ledger) return;
+    if (!selectedLedger?.ledger_id) return;
     
     try {
-      const response = await ledgersAPI.updateLedger(selectedLedger.ledger.id, data);
+      const response = await ledgersAPI.updateLedger(selectedLedger.ledger_id, data);
       if (response.data.success) {
         setShowEditDialog(false);
         setSelectedLedger(null);
@@ -116,19 +117,21 @@ export default function LedgersPage() {
 
   // 处理账本操作
   const handleLedgerAction = (action: string, ledger: UserLedger) => {
+    console.log('handleLedgerAction:', action, ledger);
     setSelectedLedger(ledger);
     switch (action) {
       case 'edit':
         setShowEditDialog(true);
         break;
       case 'invite':
+        console.log('Opening invite dialog, ledger_id:', ledger.ledger_id);
         setShowInviteDialog(true);
         break;
       case 'members':
         setShowMembersDialog(true);
         break;
       case 'delete':
-        handleDeleteLedger(ledger.ledger!.id);
+        handleDeleteLedger(ledger.ledger_id);
         break;
     }
   };
@@ -138,11 +141,11 @@ export default function LedgersPage() {
   }, []);
 
   // 根据角色获取角色显示文本和图标
-  const getRoleDisplay = (role: string) => {
-    if (role === 'ADMIN') {
-      return { text: '管理员', icon: <Crown className="h-4 w-4 text-yellow-500" /> };
+  const getRoleDisplay = (role: UserRole) => {
+    if (role === UserRole.ADMIN) {
+      return { text: ROLE_DISPLAY[UserRole.ADMIN].text, icon: <Crown className="h-4 w-4 text-yellow-500" /> };
     }
-    return { text: '成员', icon: <Users className="h-4 w-4 text-blue-500" /> };
+    return { text: ROLE_DISPLAY[UserRole.MEMBER].text, icon: <Users className="h-4 w-4 text-blue-500" /> };
   };
 
   if (loading) {
@@ -204,7 +207,8 @@ export default function LedgersPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {userLedgers.map((userLedger) => {
-                const ledger = userLedger.ledger!;
+                const ledger = userLedger.ledger;
+                if (!ledger) return null; // 安全检查
                 const roleDisplay = getRoleDisplay(userLedger.role);
                 
                 return (
@@ -237,7 +241,7 @@ export default function LedgersPage() {
                             <button
                               onClick={() => handleLedgerAction('edit', userLedger)}
                               className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center space-x-2"
-                              disabled={userLedger.role !== 'ADMIN'}
+                              disabled={userLedger.role !== UserRole.ADMIN}
                             >
                               <Edit className="h-4 w-4" />
                               <span>编辑</span>
@@ -245,7 +249,7 @@ export default function LedgersPage() {
                             <button
                               onClick={() => handleLedgerAction('invite', userLedger)}
                               className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center space-x-2"
-                              disabled={userLedger.role !== 'ADMIN'}
+                              disabled={userLedger.role !== UserRole.ADMIN}
                             >
                               <UserPlus className="h-4 w-4" />
                               <span>邀请成员</span>
@@ -260,7 +264,7 @@ export default function LedgersPage() {
                             <button
                               onClick={() => handleLedgerAction('delete', userLedger)}
                               className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center space-x-2 text-red-600"
-                              disabled={userLedger.role !== 'ADMIN'}
+                              disabled={userLedger.role !== UserRole.ADMIN}
                             >
                               <Trash2 className="h-4 w-4" />
                               <span>删除</span>
@@ -287,7 +291,7 @@ export default function LedgersPage() {
                           <span>时区: {ledger.timezone}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span>状态: {ledger.status === 'ACTIVE' ? '活跃' : '已删除'}</span>
+                          <span>状态: {LEDGER_STATUS_DISPLAY[ledger.status].text}</span>
                           <span>加入于 {dayjs(userLedger.joined_at).format('MM/DD')}</span>
                         </div>
                       </div>
@@ -336,7 +340,7 @@ export default function LedgersPage() {
             setSelectedLedger(null);
           }}
           onSubmit={handleInviteMember}
-          ledgerId={selectedLedger?.ledger?.id}
+          ledgerId={selectedLedger?.ledger_id}
         />
 
         <MembersManagementDialog

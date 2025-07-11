@@ -1,3 +1,5 @@
+import { UserRole, BillType, InvitationStatus, LedgerStatus } from '@/constants/enums';
+
 export interface User {
   id: number;
   email: string;
@@ -7,7 +9,7 @@ export interface User {
 export interface Bill {
   id: number;
   amount: number;
-  type: 'expense' | 'income';
+  type: BillType;
   category?: string;
   description?: string;
   date: string;
@@ -17,7 +19,7 @@ export interface Bill {
 export interface BillCreate {
   amount: number;
   category?: string;
-  type: 'expense' | 'income';
+  type: BillType;
   description?: string;
   date?: string;
 }
@@ -99,7 +101,7 @@ export interface Ledger {
   description?: string;
   currency: string;
   timezone: string;
-  status: 'ACTIVE' | 'DELETED';
+  status: LedgerStatus;
   created_at: string;
   deleted_at?: string;
 }
@@ -115,7 +117,7 @@ export interface UserLedger {
   id: number;
   user_id: number;
   ledger_id: number;
-  role: 'ADMIN' | 'MEMBER';
+  role: UserRole;
   joined_at: string;
   status: string;
   user?: User;
@@ -128,17 +130,27 @@ export interface Invitation {
   ledger_id: number;
   inviter_id: number;
   invitee_email: string;
-  role: 'ADMIN' | 'MEMBER';
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+  role: UserRole;
+  status: InvitationStatus;
   expires_at: string;
   created_at: string;
   accepted_at?: string;
+  inviter?: {
+    id: number;
+    email: string;
+    username?: string;
+  };
+  ledger?: {
+    id: number;
+    name: string;
+    description?: string;
+  };
 }
 
 export interface InvitationCreate {
   ledger_id: number;
   invitee_email: string;
-  role?: 'ADMIN' | 'MEMBER';
+  role?: UserRole;
 }
 
  

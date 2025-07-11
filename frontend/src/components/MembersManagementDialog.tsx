@@ -74,11 +74,12 @@ export default function MembersManagementDialog({
         fetchMembers(); // 重新获取成员列表
         onMemberRemoved(); // 通知父组件更新
       } else {
-        alert(response.data.message || '移除成员失败');
+        setError(response.data.message || '移除成员失败');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('移除成员失败:', err);
-      alert('移除成员失败');
+      const errorMessage = err.response?.data?.detail || '移除成员失败';
+      setError(errorMessage);
     }
   };
 
@@ -92,15 +93,25 @@ export default function MembersManagementDialog({
     try {
       const response = await ledgersAPI.transferOwnership(ledgerId, newOwnerId);
       if (response.data.success) {
-        alert('所有权转移成功');
+        // 显示成功消息
+        const successDiv = document.createElement('div');
+        successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        successDiv.textContent = '所有权转移成功！';
+        document.body.appendChild(successDiv);
+        
+        setTimeout(() => {
+          document.body.removeChild(successDiv);
+        }, 3000);
+        
         onClose();
         onMemberRemoved(); // 通知父组件更新
       } else {
-        alert(response.data.message || '转移所有权失败');
+        setError(response.data.message || '转移所有权失败');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('转移所有权失败:', err);
-      alert('转移所有权失败');
+      const errorMessage = err.response?.data?.detail || '转移所有权失败';
+      setError(errorMessage);
     }
   };
 
@@ -113,13 +124,24 @@ export default function MembersManagementDialog({
     try {
       const response = await invitationsAPI.cancelInvitation(invitationId);
       if (response.data.success) {
+        // 显示成功消息
+        const successDiv = document.createElement('div');
+        successDiv.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        successDiv.textContent = '邀请已取消';
+        document.body.appendChild(successDiv);
+        
+        setTimeout(() => {
+          document.body.removeChild(successDiv);
+        }, 3000);
+        
         fetchInvitations(); // 重新获取邀请列表
       } else {
-        alert(response.data.message || '取消邀请失败');
+        setError(response.data.message || '取消邀请失败');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('取消邀请失败:', err);
-      alert('取消邀请失败');
+      const errorMessage = err.response?.data?.detail || '取消邀请失败';
+      setError(errorMessage);
     }
   };
 
@@ -127,6 +149,14 @@ export default function MembersManagementDialog({
     if (open && ledgerId) {
       fetchMembers();
       fetchInvitations();
+      
+      // 设置定时器，每30秒刷新一次数据
+      const interval = setInterval(() => {
+        fetchMembers();
+        fetchInvitations();
+      }, 30000);
+      
+      return () => clearInterval(interval);
     }
   }, [open, ledgerId]);
 

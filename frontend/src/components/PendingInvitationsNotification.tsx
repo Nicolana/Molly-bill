@@ -35,16 +35,23 @@ export default function PendingInvitationsNotification() {
     try {
       const response = await invitationsAPI.acceptInvitation(invitationId);
       if (response.data.success) {
-        alert('邀请接受成功！');
-        fetchPendingInvitations(); // 重新获取邀请列表
-        // 刷新页面以更新用户账本列表
-        window.location.reload();
+        // 显示成功消息
+        const successDiv = document.createElement('div');
+        successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        successDiv.textContent = '邀请接受成功！正在刷新页面...';
+        document.body.appendChild(successDiv);
+        
+        // 延迟刷新页面
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
-        alert(response.data.message || '接受邀请失败');
+        setError(response.data.message || '接受邀请失败');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('接受邀请失败:', err);
-      alert('接受邀请失败');
+      const errorMessage = err.response?.data?.detail || '接受邀请失败';
+      setError(errorMessage);
     }
   };
 
@@ -55,19 +62,37 @@ export default function PendingInvitationsNotification() {
     try {
       const response = await invitationsAPI.rejectInvitation(invitationId);
       if (response.data.success) {
-        alert('邀请已拒绝');
+        // 显示成功消息
+        const successDiv = document.createElement('div');
+        successDiv.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        successDiv.textContent = '邀请已拒绝';
+        document.body.appendChild(successDiv);
+        
+        // 自动移除消息
+        setTimeout(() => {
+          document.body.removeChild(successDiv);
+        }, 3000);
+        
         fetchPendingInvitations(); // 重新获取邀请列表
       } else {
-        alert(response.data.message || '拒绝邀请失败');
+        setError(response.data.message || '拒绝邀请失败');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('拒绝邀请失败:', err);
-      alert('拒绝邀请失败');
+      const errorMessage = err.response?.data?.detail || '拒绝邀请失败';
+      setError(errorMessage);
     }
   };
 
   useEffect(() => {
     fetchPendingInvitations();
+    
+    // 设置定时器，每30秒检查一次邀请状态
+    const interval = setInterval(() => {
+      fetchPendingInvitations();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // 如果没有待处理邀请或正在加载，不显示组件
@@ -125,8 +150,18 @@ export default function PendingInvitationsNotification() {
                         </div>
                       )}
                     </div>
+                    <p className="text-gray-700 mb-1">
+                      <span className="font-medium">{invitation.inviter?.email || `用户${invitation.inviter_id}`}</span> 
+                      邀请您加入账本 
+                      <span className="font-medium text-blue-600">
+                        {invitation.ledger?.name || `账本${invitation.ledger_id}`}
+                      </span>
+                    </p>
+                    {invitation.ledger?.description && (
+                      <p className="text-sm text-gray-600 mb-2">{invitation.ledger.description}</p>
+                    )}
                     <p className="text-gray-700">
-                      您被邀请加入账本，角色为：
+                      您的角色将是：
                       <span className={`ml-1 px-2 py-1 rounded text-xs font-medium ${
                         invitation.role === 'ADMIN' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
                       }`}>
@@ -134,8 +169,6 @@ export default function PendingInvitationsNotification() {
                       </span>
                     </p>
                     <div className="flex items-center space-x-4 text-sm text-gray-500 mt-2">
-                      <span>邀请人ID: {invitation.inviter_id}</span>
-                      <span>•</span>
                       <span>邀请时间: {dayjs(invitation.created_at).format('MM/DD HH:mm')}</span>
                       <span>•</span>
                       <span className={urgency.color}>
