@@ -4,14 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-import { MessageSquare, BarChart3, Calendar, TrendingUp } from 'lucide-react';
+import { MessageSquare, BarChart3, Calendar, TrendingUp, BookOpen } from 'lucide-react';
 import { Bill, BillCreate } from '@/types';
 import { billsAPI } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ChatInterface from '@/components/ChatInterface';
 import CalendarView from '@/components/CalendarView';
 import BillList from '@/components/BillList';
-import LedgerSelector from '@/components/LedgerSelector';
+import { useLedgerStore } from '@/store/ledger';
+import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
@@ -23,15 +24,17 @@ export default function DashboardPage() {
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'month' | 'year'>('month'); // 新增时间筛选
-  const [selectedLedgerId, setSelectedLedgerId] = useState<number | undefined>(undefined);
+  
+  // 使用全局账本状态
+  const { currentLedgerId, userLedgers, fetchUserLedgers, getCurrentLedger } = useLedgerStore();
 
   // 获取账单列表
   const fetchBills = async () => {
-    if (!selectedLedgerId) return; // 如果没有选中账本，不获取账单
+    if (!currentLedgerId) return; // 如果没有选中账本，不获取账单
     
     try {
       setLoading(true);
-      const response = await billsAPI.getBills(0, 1000, timeFilter, selectedLedgerId); // 传递账本ID
+      const response = await billsAPI.getBills(0, 1000, timeFilter, currentLedgerId); // 传递账本ID
       console.log("bills", response)
       
       if (response.data.success && response.data.data) {
@@ -71,15 +74,18 @@ export default function DashboardPage() {
     setSelectedDate(date);
   };
 
+  // 初始化数据
+  useEffect(() => {
+    const initializeData = async () => {
+      await fetchUserLedgers();
+      await getCurrentLedger();
+    };
+    initializeData();
+  }, []);
+
   useEffect(() => {
     fetchBills();
-  }, [timeFilter, selectedLedgerId]); // 当时间筛选或账本改变时重新获取数据
-
-  // 处理账本切换
-  const handleLedgerChange = (ledgerId: number) => {
-    setSelectedLedgerId(ledgerId);
-    setBills([]); // 清空当前账单数据
-  };
+  }, [timeFilter, currentLedgerId]); // 当时间筛选或账本改变时重新获取数据
 
   // 计算统计数据
   const totalAmount = bills.reduce((sum, bill) => {
@@ -222,17 +228,23 @@ export default function DashboardPage() {
                     <MessageSquare className="h-5 w-5" />
                     <span>AI记账助手</span>
                   </CardTitle>
-                  <LedgerSelector 
-                    selectedLedgerId={selectedLedgerId}
-                    onLedgerChange={handleLedgerChange}
-                    className="ml-4"
-                  />
+                  <Link href="/dashboard/ledgers">
+                    <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                      <BookOpen className="h-4 w-4" />
+                      <span>
+                        {currentLedgerId ? 
+                          userLedgers.find(ul => ul.ledger?.id === currentLedgerId)?.ledger?.name || '选择账本' : 
+                          '选择账本'
+                        }
+                      </span>
+                    </Button>
+                  </Link>
                 </div>
               </CardHeader>
               <CardContent className="h-[calc(100%-80px)] p-0">
                 <ChatInterface 
                   onBillsCreated={handleBillsCreated} 
-                  selectedLedgerId={selectedLedgerId}
+                  selectedLedgerId={currentLedgerId || undefined}
                 />
               </CardContent>
             </Card>

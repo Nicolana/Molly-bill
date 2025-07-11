@@ -109,6 +109,12 @@ export const ledgersAPI = {
   // 获取用户的账本列表
   getUserLedgers: () => api.get<BaseResponse<UserLedger[]>>('/ledgers/my'),
   
+  // 获取当前选中的账本
+  getCurrentLedger: () => api.get<BaseResponse<{ current_ledger_id: number | null }>>('/ledgers/current'),
+  
+  // 设置当前选中的账本
+  setCurrentLedger: (ledgerId: number) => api.post<BaseResponse<{ current_ledger_id: number }>>(`/ledgers/current/${ledgerId}`),
+  
   // 创建新账本
   createLedger: (data: LedgerCreate) => api.post<BaseResponse<Ledger>>('/ledgers/', data),
   

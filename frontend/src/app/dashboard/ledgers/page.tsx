@@ -7,6 +7,7 @@ import { BookOpen, Plus, Settings, Users, Crown, UserPlus, MoreVertical, Trash2,
 import { UserLedger, Ledger, LedgerCreate, Invitation, InvitationCreate } from '@/types';
 import { ledgersAPI, invitationsAPI } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { useLedgerStore } from '@/store/ledger';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 
@@ -18,10 +19,12 @@ import MembersManagementDialog from '@/components/MembersManagementDialog';
 import PendingInvitationsNotification from '@/components/PendingInvitationsNotification';
 
 export default function LedgersPage() {
-  const [userLedgers, setUserLedgers] = useState<UserLedger[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedLedger, setSelectedLedger] = useState<UserLedger | null>(null);
+  
+  // 使用全局账本状态
+  const { userLedgers, currentLedgerId, fetchUserLedgers, setCurrentLedger } = useLedgerStore();
   
   // 对话框状态
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -29,16 +32,11 @@ export default function LedgersPage() {
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   
-  // 获取用户账本列表
-  const fetchUserLedgers = async () => {
+  // 刷新账本数据
+  const refreshLedgers = async () => {
     try {
       setLoading(true);
-      const response = await ledgersAPI.getUserLedgers();
-      if (response.data.success && response.data.data) {
-        setUserLedgers(response.data.data);
-      } else {
-        setError(response.data.message || '获取账本列表失败');
-      }
+      await fetchUserLedgers(); // 使用全局store的方法
     } catch (err) {
       console.error('获取账本列表失败:', err);
       setError('获取账本列表失败');
@@ -53,7 +51,7 @@ export default function LedgersPage() {
       const response = await ledgersAPI.createLedger(data);
       if (response.data.success) {
         setShowCreateDialog(false);
-        fetchUserLedgers(); // 重新获取列表
+        refreshLedgers(); // 重新获取列表
       } else {
         throw new Error(response.data.message || '创建账本失败');
       }
@@ -72,7 +70,7 @@ export default function LedgersPage() {
       if (response.data.success) {
         setShowEditDialog(false);
         setSelectedLedger(null);
-        fetchUserLedgers(); // 重新获取列表
+        refreshLedgers(); // 重新获取列表
       } else {
         throw new Error(response.data.message || '更新账本失败');
       }
@@ -89,7 +87,7 @@ export default function LedgersPage() {
     try {
       const response = await ledgersAPI.deleteLedger(ledgerId);
       if (response.data.success) {
-        fetchUserLedgers(); // 重新获取列表
+        refreshLedgers(); // 重新获取列表
       } else {
         throw new Error(response.data.message || '删除账本失败');
       }
@@ -136,7 +134,7 @@ export default function LedgersPage() {
   };
 
   useEffect(() => {
-    fetchUserLedgers();
+    refreshLedgers();
   }, []);
 
   // 根据角色获取角色显示文本和图标
@@ -210,11 +208,20 @@ export default function LedgersPage() {
                 const roleDisplay = getRoleDisplay(userLedger.role);
                 
                 return (
-                  <Card key={userLedger.id} className="hover:shadow-lg transition-shadow">
+                  <Card key={userLedger.id} className={`hover:shadow-lg transition-shadow ${
+                    currentLedgerId === ledger.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                  }`}>
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <CardTitle className="text-lg mb-2">{ledger.name}</CardTitle>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <CardTitle className="text-lg">{ledger.name}</CardTitle>
+                            {currentLedgerId === ledger.id && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                当前选中
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center space-x-2 text-sm text-gray-600">
                             {roleDisplay.icon}
                             <span>{roleDisplay.text}</span>
@@ -284,6 +291,19 @@ export default function LedgersPage() {
                           <span>加入于 {dayjs(userLedger.joined_at).format('MM/DD')}</span>
                         </div>
                       </div>
+                      
+                      {/* 选择账本按钮 */}
+                      {currentLedgerId !== ledger.id && (
+                        <div className="mt-3 pt-3 border-t">
+                          <Button
+                            onClick={() => setCurrentLedger(ledger.id)}
+                            size="sm"
+                            className="w-full"
+                          >
+                            选择此账本
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
@@ -326,7 +346,7 @@ export default function LedgersPage() {
             setSelectedLedger(null);
           }}
           userLedger={selectedLedger}
-          onMemberRemoved={fetchUserLedgers}
+          onMemberRemoved={refreshLedgers}
         />
       </div>
     </ProtectedRoute>
