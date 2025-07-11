@@ -8,6 +8,7 @@ import { invitationsAPI } from '@/lib/api';
 import { Mail, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
+import { InvitationStatus, UserRole } from '@/constants/enums';
 
 export default function PendingInvitationsNotification() {
   const [pendingInvitations, setPendingInvitations] = useState<Invitation[]>([]);
@@ -163,9 +164,9 @@ export default function PendingInvitationsNotification() {
                     <p className="text-gray-700">
                       您的角色将是：
                       <span className={`ml-1 px-2 py-1 rounded text-xs font-medium ${
-                        invitation.role === 'ADMIN' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
+                        invitation.role === UserRole.ADMIN ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {invitation.role === 'ADMIN' ? '管理员' : '成员'}
+                        {invitation.role === UserRole.ADMIN ? '管理员' : '成员'}
                       </span>
                     </p>
                     <div className="flex items-center space-x-4 text-sm text-gray-500 mt-2">
@@ -178,7 +179,7 @@ export default function PendingInvitationsNotification() {
                   </div>
                 </div>
                 
-                {invitation.status === 'PENDING' && urgency.level !== 'expired' && (
+                {invitation.status === InvitationStatus.PENDING && urgency.level !== 'expired' && (
                   <div className="flex items-center space-x-2">
                     <Button
                       variant="outline"
