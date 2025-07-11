@@ -156,3 +156,14 @@ def cleanup_expired_data(db: Session):
     
     db.commit()
     return len(expired_ledgers) 
+
+def check_user_ledger_owner(db: Session, user_id: int, ledger_id: int):
+    """检查用户是否是账本拥有者（最早加入的管理员）"""
+    # 获取该账本中最早加入的管理员
+    earliest_admin = db.query(UserLedger).filter(
+        UserLedger.ledger_id == ledger_id,
+        UserLedger.role == UserRole.ADMIN,
+        UserLedger.status == "active"
+    ).order_by(UserLedger.joined_at.asc()).first()
+    
+    return earliest_admin and earliest_admin.user_id == user_id 

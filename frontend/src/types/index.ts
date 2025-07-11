@@ -120,6 +120,7 @@ export interface UserLedger {
   role: UserRole;
   joined_at: string;
   status: string;
+  is_owner?: boolean;
   user?: User;
   ledger?: Ledger;
 }

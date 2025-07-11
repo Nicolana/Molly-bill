@@ -10,7 +10,7 @@ from app.core.security.auth import get_current_user
 from app.crud.ledger import (
     create_ledger, get_user_ledgers, get_ledger, get_ledger_members,
     remove_ledger_member, check_user_ledger_access, check_user_ledger_admin, 
-    transfer_ledger_ownership, delete_ledger, restore_ledger, permanently_delete_ledger
+    check_user_ledger_owner, transfer_ledger_ownership, delete_ledger, restore_ledger, permanently_delete_ledger
 )
 from app.crud.user import get_user_by_email
 
@@ -145,7 +145,7 @@ def get_ledger_info(
         data=ledger
     )
 
-@router.get("/{ledger_id}/members", response_model=BaseResponse[List[dict]])
+@router.get("/{ledger_id}/members", response_model=BaseResponse[dict])
 def get_ledger_members_endpoint(
     ledger_id: int,
     current_user: User = Depends(get_current_user),
@@ -160,6 +160,7 @@ def get_ledger_members_endpoint(
         )
     
     members = get_ledger_members(db, ledger_id)
+    is_owner = check_user_ledger_owner(db, current_user.id, ledger_id)
     
     # 返回包含用户信息的完整成员列表
     result = []
@@ -171,6 +172,7 @@ def get_ledger_members_endpoint(
             "role": member.role,
             "joined_at": member.joined_at,
             "status": member.status,
+            "is_owner": check_user_ledger_owner(db, member.user_id, ledger_id),
             "user": {
                 "id": member.user.id,
                 "email": member.user.email,
@@ -181,7 +183,7 @@ def get_ledger_members_endpoint(
     return BaseResponse(
         success=True,
         message="获取成员列表成功",
-        data=result
+        data={"members": result, "current_user_is_owner": is_owner}
     )
 
 @router.put("/{ledger_id}", response_model=BaseResponse[LedgerResponse])
@@ -267,8 +269,8 @@ def remove_member_endpoint(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """从账本中移除成员（仅管理员）"""
-    # 检查管理员权限
+    """从账本中移除成员"""
+    # 检查基本管理员权限
     if not check_user_ledger_admin(db, current_user.id, ledger_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -281,6 +283,21 @@ def remove_member_endpoint(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="不能移除自己"
         )
+    
+    # 检查被移除的用户是否为管理员
+    target_user_ledger = db.query(UserLedger).filter(
+        UserLedger.user_id == user_id,
+        UserLedger.ledger_id == ledger_id,
+        UserLedger.status == "active"
+    ).first()
+    
+    if target_user_ledger and target_user_ledger.role == UserRole.ADMIN:
+        # 如果要移除的是管理员，则需要账本拥有者权限
+        if not check_user_ledger_owner(db, current_user.id, ledger_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="仅账本拥有者可以移除管理员"
+            )
     
     # 移除成员
     if remove_ledger_member(db, ledger_id, user_id):

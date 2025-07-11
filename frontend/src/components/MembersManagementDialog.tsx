@@ -16,6 +16,11 @@ interface MembersManagementDialogProps {
   onMemberRemoved: () => void;
 }
 
+interface MembersResponse {
+  members: UserLedger[];
+  current_user_is_owner: boolean;
+}
+
 export default function MembersManagementDialog({ 
   open, 
   onClose, 
@@ -26,6 +31,7 @@ export default function MembersManagementDialog({
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isOwner, setIsOwner] = useState(false);
 
   const ledgerId = userLedger?.ledger?.id;
   const isAdmin = userLedger?.role === UserRole.ADMIN;
@@ -38,7 +44,17 @@ export default function MembersManagementDialog({
       setLoading(true);
       const response = await ledgersAPI.getLedgerMembers(ledgerId);
       if (response.data.success && response.data.data) {
-        setMembers(response.data.data);
+        const responseData = response.data.data;
+        if (Array.isArray(responseData)) {
+          // 兼容旧的API响应格式
+          setMembers(responseData);
+          setIsOwner(false);
+        } else {
+          // 新的API响应格式
+          const membersData = responseData as MembersResponse;
+          setMembers(membersData.members);
+          setIsOwner(membersData.current_user_is_owner);
+        }
       }
     } catch (err) {
       console.error('获取成员列表失败:', err);
@@ -162,8 +178,11 @@ export default function MembersManagementDialog({
   }, [open, ledgerId]);
 
   // 根据角色获取角色显示信息
-  const getRoleDisplay = (role: string) => {
+  const getRoleDisplay = (role: string, isOwner: boolean = false) => {
     if (role === UserRole.ADMIN) {
+      if (isOwner) {
+        return { text: '拥有者', icon: <Crown className="h-4 w-4 text-purple-500" />, color: 'text-purple-600' };
+      }
       return { text: '管理员', icon: <Crown className="h-4 w-4 text-yellow-500" />, color: 'text-yellow-600' };
     }
     return { text: '成员', icon: <User className="h-4 w-4 text-blue-500" />, color: 'text-blue-600' };
@@ -225,7 +244,7 @@ export default function MembersManagementDialog({
           ) : (
             <div className="space-y-3">
               {members.map((member) => {
-                const roleDisplay = getRoleDisplay(member.role);
+                const roleDisplay = getRoleDisplay(member.role, member.is_owner);
                 return (
                   <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center space-x-3">
@@ -245,7 +264,7 @@ export default function MembersManagementDialog({
                     
                     {isAdmin && member.user_id !== userLedger.user_id && (
                       <div className="flex items-center space-x-2">
-                        {member.role === UserRole.MEMBER && (
+                        {member.role === UserRole.MEMBER && isOwner && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -256,15 +275,17 @@ export default function MembersManagementDialog({
                             <span>转移所有权</span>
                           </Button>
                         )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRemoveMember(member.user_id, member.user?.email)}
-                          className="flex items-center space-x-1 text-red-600 hover:text-red-700"
-                        >
-                          <UserX className="h-3 w-3" />
-                          <span>移除</span>
-                        </Button>
+                        {(member.role === UserRole.MEMBER || (member.role === UserRole.ADMIN && isOwner)) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRemoveMember(member.user_id, member.user?.email)}
+                            className="flex items-center space-x-1 text-red-600 hover:text-red-700"
+                          >
+                            <UserX className="h-3 w-3" />
+                            <span>移除</span>
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
