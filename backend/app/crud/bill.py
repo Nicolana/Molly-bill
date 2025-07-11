@@ -25,7 +25,9 @@ def get_bills_count(db: Session, ledger_id: int, start_date: Optional[datetime] 
     return query.count()
 
 def create_bill(db: Session, bill: BillCreate, user_id: int):
-    db_bill = Bill(**bill.model_dump(), owner_id=user_id)
+    bill_data = bill.model_dump()
+    bill_data['owner_id'] = user_id
+    db_bill = Bill(**bill_data)
     db.add(db_bill)
     db.commit()
     db.refresh(db_bill)

@@ -30,7 +30,8 @@ export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
   const loadChatHistory = async () => {
     try {
       setIsLoadingHistory(true);
-      const response = await chatAPI.getRecentMessages(100);
+      // 使用新的API路径，默认账本ID为1
+      const response = await aiAPI.getChatHistory(1, 0, 100);
       
       // 检查统一返回格式
       if (!response.data?.success) {
@@ -254,13 +255,7 @@ export default function ChatInterface({ onBillsCreated }: ChatInterfaceProps) {
   // 删除消息
   const deleteMessage = async (messageId: string) => {
     try {
-      const response = await chatAPI.deleteMessage(parseInt(messageId));
-      
-      // 检查统一返回格式
-      if (!response.data?.success) {
-        throw new Error(response.data?.message || '删除消息失败');
-      }
-      
+      // 暂时从本地状态删除，后续可以添加删除API
       setMessages(prev => prev.filter(msg => msg.id !== messageId));
     } catch (error) {
       console.error('删除消息失败:', error);

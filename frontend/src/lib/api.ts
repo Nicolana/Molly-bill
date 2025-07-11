@@ -97,11 +97,11 @@ export const chatAPI = {
 // AI记账助手相关API
 export const aiAPI = {
   // 统一的聊天接口（支持文本、语音、图片）
-  chat: (data: ChatRequest) => api.post<BaseResponse<{
-    message: string;
-    bills?: BillCreate[];
-    confidence?: number;
-  }>>('/ai/chat', data),
+  chat: (data: ChatRequest) => api.post<BaseResponse<ChatResponse>>('/chat/', data),
+  
+  // 获取聊天历史
+  getChatHistory: (ledgerId: number, skip: number = 0, limit: number = 50) => 
+    api.get<BaseResponse<DBChatMessage[]>>(`/chat/history/${ledgerId}?skip=${skip}&limit=${limit}`),
 };
 
 export default api; 
