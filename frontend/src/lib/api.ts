@@ -18,7 +18,7 @@ interface PaginatedResponse<T = unknown> {
   limit: number;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -65,7 +65,7 @@ export const authAPI = {
       email: data.email,
       password: data.password,
     };
-    return api.post<BaseResponse<AuthResponse>>('/token', payload);
+    return api.post<BaseResponse<AuthResponse>>('/login', payload);
   },
   getMe: () => api.get<BaseResponse<User>>('/me'),
 };
