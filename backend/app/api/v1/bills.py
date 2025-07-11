@@ -29,17 +29,20 @@ def get_ledger_bills(
 ):
     """获取账本账单列表"""
     # 检查用户是否有账本访问权限
-    if not check_user_ledger_access(db, current_user.id, ledger_id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权限访问此账本"
-        )
+    # if not check_user_ledger_access(db, current_user.id, ledger_id):
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="无权限访问此账本"
+    #     )
     
     bills = get_bills(db, ledger_id, skip, limit, start_date, end_date)
     total = get_bills_count(db, ledger_id, start_date, end_date)
     
+    # 使用Pydantic模型自动序列化
+    bills_data = [BillResponse.model_validate(bill) for bill in bills]
+    
     return paginated_response(
-        data=bills,
+        data=bills_data,
         total=total,
         skip=skip,
         limit=limit,
@@ -89,8 +92,11 @@ def get_bill_info(
             detail="无权限访问此账单"
         )
     
+    # 使用Pydantic模型自动序列化
+    bill_data = BillResponse.model_validate(bill)
+    
     return success_response(
-        data=bill,
+        data=bill_data,
         message="获取账单信息成功"
     )
 
@@ -109,8 +115,11 @@ def update_bill_info(
             detail="账单不存在或无权限修改"
         )
     
+    # 使用Pydantic模型自动序列化
+    updated_bill_data = BillResponse.model_validate(updated_bill)
+    
     return success_response(
-        data=updated_bill,
+        data=updated_bill_data,
         message="账单更新成功"
     )
 

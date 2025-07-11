@@ -6,7 +6,7 @@ from datetime import datetime
 from app.db.database import get_db
 from app.models import User
 from app.schemas.chat import ChatRequest, ChatResponse, ChatMessageCreate
-from app.schemas.bill import BillCreate
+from app.schemas.bill import BillCreate, BillResponse
 from app.models.enums import BillType
 from app.core.security.auth import get_current_user
 from app.services.ai.service import ai_service
@@ -155,16 +155,7 @@ async def get_chat_history(
             if msg.bill_id:
                 bill = bill_crud.get_bill(db, msg.bill_id)
                 if bill:
-                    message_data["bills"] = [{
-                        "id": bill.id,
-                        "amount": bill.amount,
-                        "type": bill.type.value,
-                        "category": bill.category,
-                        "description": bill.description,
-                        "date": bill.date.isoformat(),
-                        "owner_id": bill.owner_id,
-                        "ledger_id": bill.ledger_id
-                    }]
+                    message_data["bills"] = [BillResponse.model_validate(bill)]
             
             response_data.append(message_data)
         
