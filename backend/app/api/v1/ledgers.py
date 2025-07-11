@@ -72,7 +72,6 @@ def get_current_ledger(
     db: Session = Depends(get_db)
 ):
     """获取用户当前选中的账本"""
-    # 检查用户是否有当前选中的账本ID（可以存储在用户表的字段中，或者返回第一个）
     user_ledgers = get_user_ledgers(db, current_user.id)
     if not user_ledgers:
         return BaseResponse(
@@ -81,11 +80,11 @@ def get_current_ledger(
             data={"current_ledger_id": None}
         )
     
-    # 暂时返回第一个账本，后续可以添加用户偏好设置
-    current_ledger_id = getattr(current_user, 'current_ledger_id', None)
-    if current_ledger_id and any(ul.ledger_id == current_ledger_id for ul in user_ledgers):
-        data = {"current_ledger_id": current_ledger_id}
+    # 如果用户有设置当前账本ID，且该账本仍然存在，则返回它
+    if current_user.current_ledger_id and any(ul.ledger_id == current_user.current_ledger_id for ul in user_ledgers):
+        data = {"current_ledger_id": current_user.current_ledger_id}
     else:
+        # 否则返回第一个账本
         data = {"current_ledger_id": user_ledgers[0].ledger_id}
     
     return BaseResponse(
@@ -108,8 +107,11 @@ def set_current_ledger(
             detail="无权限访问此账本"
         )
     
-    # 更新用户的当前账本ID（需要在User模型中添加current_ledger_id字段）
-    # 暂时返回成功，后续可以添加数据库字段存储
+    # 更新用户的当前账本ID
+    current_user.current_ledger_id = ledger_id
+    db.commit()
+    db.refresh(current_user)
+    
     return BaseResponse(
         success=True,
         message="当前账本已更新",
