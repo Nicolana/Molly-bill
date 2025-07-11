@@ -49,6 +49,21 @@ def get_ledger_members(db: Session, ledger_id: int):
         UserLedger.status == "active"
     ).all()
 
+def remove_ledger_member(db: Session, ledger_id: int, user_id: int):
+    """从账本中移除成员"""
+    user_ledger = db.query(UserLedger).filter(
+        UserLedger.user_id == user_id,
+        UserLedger.ledger_id == ledger_id,
+        UserLedger.status == "active"
+    ).first()
+    
+    if user_ledger:
+        # 设置状态为 inactive 而不是删除记录
+        user_ledger.status = "inactive"
+        db.commit()
+        return True
+    return False
+
 def check_user_ledger_access(db: Session, user_id: int, ledger_id: int):
     """检查用户是否有账本访问权限"""
     return db.query(UserLedger).filter(
@@ -68,13 +83,34 @@ def check_user_ledger_admin(db: Session, user_id: int, ledger_id: int):
 
 def transfer_ledger_ownership(db: Session, ledger_id: int, new_owner_id: int):
     """转让账本所有权"""
+    # 将当前管理员改为普通成员
+    current_admins = db.query(UserLedger).filter(
+        UserLedger.ledger_id == ledger_id,
+        UserLedger.role == UserRole.ADMIN,
+        UserLedger.status == "active"
+    ).all()
+    
+    for admin in current_admins:
+        admin.role = UserRole.MEMBER
+    
     # 将新用户设为管理员
-    new_admin = UserLedger(
-        user_id=new_owner_id,
-        ledger_id=ledger_id,
-        role=UserRole.ADMIN
-    )
-    db.add(new_admin)
+    new_admin = db.query(UserLedger).filter(
+        UserLedger.user_id == new_owner_id,
+        UserLedger.ledger_id == ledger_id,
+        UserLedger.status == "active"
+    ).first()
+    
+    if new_admin:
+        new_admin.role = UserRole.ADMIN
+    else:
+        # 如果用户不在账本中，创建新记录
+        new_admin = UserLedger(
+            user_id=new_owner_id,
+            ledger_id=ledger_id,
+            role=UserRole.ADMIN
+        )
+        db.add(new_admin)
+    
     db.commit()
     return True
 

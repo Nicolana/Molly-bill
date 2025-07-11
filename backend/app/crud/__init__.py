@@ -10,7 +10,7 @@ __all__ = [
     
     # 账本相关
     "create_ledger", "create_personal_ledger", "get_user_ledgers",
-    "get_ledger", "get_ledger_members", "check_user_ledger_access",
+    "get_ledger", "get_ledger_members", "remove_ledger_member", "check_user_ledger_access",
     "check_user_ledger_admin", "transfer_ledger_ownership", "delete_ledger",
     "restore_ledger", "permanently_delete_ledger", "cleanup_expired_data",
     
