@@ -117,6 +117,12 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
+    // 检查是否选中了账本
+    if (!selectedLedgerId) {
+      addMessage('请先在账本管理页面选择一个账本，然后再开始聊天。', 'assistant');
+      return;
+    }
+
     const userMessage = inputValue.trim();
     setInputValue('');
     setIsLoading(true);
@@ -125,7 +131,10 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
     addMessage(userMessage, 'user');
 
     try {
-      const response = await aiAPI.chat({ message: userMessage });
+      const response = await aiAPI.chat({ 
+        message: userMessage,
+        ledger_id: selectedLedgerId
+      });
       
       // 检查统一返回格式
       if (!response.data?.success) {
@@ -147,6 +156,12 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
 
   // 开始录音
   const startRecording = async () => {
+    // 检查是否选中了账本
+    if (!selectedLedgerId) {
+      addMessage('请先在账本管理页面选择一个账本，然后再开始录音。', 'assistant');
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
@@ -186,11 +201,18 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
 
   // 处理语音输入
   const processVoiceInput = async (audioData: string) => {
+    // 检查是否选中了账本
+    if (!selectedLedgerId) {
+      addMessage('请先在账本管理页面选择一个账本，然后再开始语音输入。', 'assistant');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await aiAPI.chat({ 
         message: '语音输入', 
-        audio: audioData 
+        audio: audioData,
+        ledger_id: selectedLedgerId
       });
       
       // 检查统一返回格式
@@ -218,6 +240,12 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // 检查是否选中了账本
+    if (!selectedLedgerId) {
+      addMessage('请先在账本管理页面选择一个账本，然后再上传图片。', 'assistant');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = async () => {
       const base64Image = (reader.result as string).split(',')[1];
@@ -228,11 +256,18 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
 
   // 处理图片分析
   const processImageInput = async (imageData: string) => {
+    // 检查是否选中了账本
+    if (!selectedLedgerId) {
+      addMessage('请先在账本管理页面选择一个账本，然后再开始图片分析。', 'assistant');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await aiAPI.chat({ 
         message: '图片分析', 
-        image: imageData 
+        image: imageData,
+        ledger_id: selectedLedgerId
       });
       
       // 检查统一返回格式

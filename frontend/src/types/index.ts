@@ -83,6 +83,7 @@ export interface ChatRequest {
   message: string;
   image?: string; // base64编码的图片
   audio?: string; // base64编码的音频
+  ledger_id?: number; // 账本ID
 }
 
 export interface ChatResponse {

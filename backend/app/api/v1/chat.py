@@ -24,12 +24,19 @@ async def chat_with_ai(
 ):
     """与AI聊天，支持文本、图片、音频输入"""
     try:
+        # 检查账本ID是否提供
+        if not chat_request.ledger_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="请选择一个账本"
+            )
+        
         # 保存用户消息到数据库
         user_message = ChatMessageCreate(
             content=chat_request.message,
             message_type="user",
             input_type="text",
-            ledger_id=chat_request.ledger_id or 1  # 默认账本ID
+            ledger_id=chat_request.ledger_id
         )
         user_msg_db = chat_crud.create_chat_message(
             db, user_message, current_user.id
@@ -70,7 +77,6 @@ async def chat_with_ai(
             ai_response = ai_service.chat(chat_request.message)
         # 如果AI识别出账单信息，创建账单
         if ai_response.get("bills"):
-            ledger_id = chat_request.ledger_id or 1  # 默认账本ID
             for bill_data in ai_response["bills"]:
                 try:
                     # 创建账单
@@ -80,7 +86,7 @@ async def chat_with_ai(
                         description=bill_data.get("description", ""),
                         category=bill_data.get("category", "其他"),
                         date=datetime.now(),
-                        ledger_id=ledger_id
+                        ledger_id=chat_request.ledger_id
                     )
                     
                     bill_db = bill_crud.create_bill(db, bill_create, current_user.id)
@@ -100,7 +106,7 @@ async def chat_with_ai(
             content=ai_response.get("message", "抱歉，我无法理解您的输入。"),
             message_type="assistant",
             input_type="text",
-            ledger_id=chat_request.ledger_id or 1
+            ledger_id=chat_request.ledger_id
         )
         chat_crud.create_chat_message(db, ai_message, current_user.id)
         
