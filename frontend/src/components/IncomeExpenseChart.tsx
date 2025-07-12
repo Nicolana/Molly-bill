@@ -130,37 +130,6 @@ export default function IncomeExpenseChart({
             </div>
           )}
         </div>
-        
-        {/* 统计概览 */}
-        <div className="grid grid-cols-3 gap-2 lg:gap-4 mt-4 p-3 lg:p-4 bg-gray-50 rounded-lg">
-          <div className="text-center">
-            <div className="text-xs text-gray-500 mb-1">总收入</div>
-            <div className="text-xs lg:text-sm font-semibold text-green-600 flex items-center justify-center">
-              <TrendingUp className="w-3 h-3 mr-1" />
-              <span className="truncate">¥{totalIncome.toFixed(2)}</span>
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-xs text-gray-500 mb-1">总支出</div>
-            <div className="text-xs lg:text-sm font-semibold text-red-600 flex items-center justify-center">
-              <TrendingDown className="w-3 h-3 mr-1" />
-              <span className="truncate">¥{totalExpense.toFixed(2)}</span>
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-xs text-gray-500 mb-1">净收支</div>
-            <div className={`text-xs lg:text-sm font-semibold flex items-center justify-center ${
-              netAmount >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {netAmount >= 0 ? (
-                <TrendingUp className="w-3 h-3 mr-1" />
-              ) : (
-                <TrendingDown className="w-3 h-3 mr-1" />
-              )}
-              <span className="truncate">¥{Math.abs(netAmount).toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
       </CardHeader>
       
       <CardContent>
