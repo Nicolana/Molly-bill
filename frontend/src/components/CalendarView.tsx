@@ -48,14 +48,23 @@ export default function CalendarView({ bills, selectedDate, onDateSelect }: Cale
   const allExpenses = calendarDays.map(date => getDayExpense(date));
   const maxExpense = Math.max(...allExpenses, 1); // 避免除以0
 
-  // 根据支出金额获取颜色
+  // 根据支出金额获取颜色 - 使用小清新薄荷绿配色
   const getColorByExpense = (expense: number) => {
-    if (expense === 0) return '#f3f4f6'; // 无支出 - 浅灰色
+    if (expense === 0) return '#fafafa'; // 无支出 - 极浅灰白
     const intensity = Math.min(expense / maxExpense, 1);
-    const red = Math.floor(239 + (255 - 239) * intensity); // 从浅红到深红
-    const green = Math.floor(68 + (99 - 68) * intensity);
-    const blue = Math.floor(68 + (71 - 68) * intensity);
-    return `rgb(${red}, ${green}, ${blue})`;
+    
+    // 使用薄荷绿渐变色系：从极浅薄荷到深薄荷绿
+    if (intensity <= 0.2) {
+      return '#f0fdfa'; // 极浅薄荷
+    } else if (intensity <= 0.4) {
+      return '#ccfbf1'; // 浅薄荷
+    } else if (intensity <= 0.6) {
+      return '#99f6e4'; // 中薄荷
+    } else if (intensity <= 0.8) {
+      return '#5eead4'; // 深薄荷
+    } else {
+      return '#2dd4bf'; // 最深薄荷
+    }
   };
 
   const goToPreviousMonth = () => {
@@ -92,7 +101,7 @@ export default function CalendarView({ bills, selectedDate, onDateSelect }: Cale
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {/* 星期标题 */}
           {['日', '一', '二', '三', '四', '五', '六'].map(day => (
             <div key={day} className="h-6 sm:h-8 flex items-center justify-center text-xs sm:text-sm font-medium text-gray-500">
@@ -110,23 +119,22 @@ export default function CalendarView({ bills, selectedDate, onDateSelect }: Cale
             return (
               <div
                 key={index}
-                className={`h-12 sm:h-16 border border-gray-200 p-0.5 sm:p-1 cursor-pointer hover:opacity-80 transition-all ${
+                className={`h-12 sm:h-16 p-2 cursor-pointer hover:opacity-80 transition-all rounded-lg ${
                   !isCurrentMonth ? 'opacity-30' : ''
-                } ${isSelected ? 'ring-1 sm:ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                } ${isSelected ? 'shadow-md' : ''}`}
                 style={{ backgroundColor }}
-                onClick={() => onDateSelect(date)}
               >
                 <div className="flex flex-col h-full">
-                  <div className={`text-xs font-medium ${
+                  <div className={`text-base font-semibold text-center ${
                     isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-                  } ${dayExpense > maxExpense * 0.5 ? 'text-white' : ''}`}>
+                  } ${dayExpense > maxExpense * 0.6 ? 'text-white' : ''}`}>
                     {dayjs(date).format('D')}
                   </div>
                   {dayExpense > 0 && (
-                    <div className="flex-1 flex items-end">
+                    <div className="flex">
                       <div className="w-full text-center">
                         <div className={`text-xs font-medium ${
-                          dayExpense > maxExpense * 0.5 ? 'text-white' : 'text-red-600'
+                          dayExpense > maxExpense * 0.6 ? 'text-white' : 'text-teal-700'
                         }`}>
                           <span className="hidden sm:inline">¥</span>{dayExpense.toFixed(0)}
                         </div>
@@ -137,26 +145,6 @@ export default function CalendarView({ bills, selectedDate, onDateSelect }: Cale
               </div>
             );
           })}
-        </div>
-        
-        {/* 图例 */}
-        <div className="mt-3 sm:mt-4 flex items-center justify-center space-x-2 sm:space-x-4">
-          <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-100 border border-gray-300"></div>
-            <span className="text-xs text-gray-600">无支出</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-200 border border-gray-300"></div>
-            <span className="text-xs text-gray-600">低支出</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-400 border border-gray-300"></div>
-            <span className="text-xs text-gray-600">中支出</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-600 border border-gray-300"></div>
-            <span className="text-xs text-gray-600">高支出</span>
-          </div>
         </div>
       </CardContent>
     </Card>
