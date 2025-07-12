@@ -13,7 +13,7 @@ import CalendarView from '@/components/CalendarView';
 import BillList from '@/components/BillList';
 import { useLedgerStore } from '@/store/ledger';
 import Link from 'next/link';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 
