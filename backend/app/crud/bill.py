@@ -5,7 +5,7 @@ from app.models import Bill
 from app.schemas.bill import BillCreate
 
 def get_bills(db: Session, ledger_id: int, skip: int = 0, limit: int = 100, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
-    """获取账本账单，支持时间筛选"""
+    """获取账本账单，支持时间筛选和分页"""
     query = db.query(Bill).filter(Bill.ledger_id == ledger_id)
     
     # 添加时间筛选
@@ -13,6 +13,16 @@ def get_bills(db: Session, ledger_id: int, skip: int = 0, limit: int = 100, star
         query = query.filter(Bill.date >= start_date, Bill.date <= end_date)
     
     return query.order_by(Bill.date.desc()).offset(skip).limit(limit).all()
+
+def get_bills_no_pagination(db: Session, ledger_id: int, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
+    """获取账本账单，支持时间筛选，不分页"""
+    query = db.query(Bill).filter(Bill.ledger_id == ledger_id)
+    
+    # 添加时间筛选
+    if start_date and end_date:
+        query = query.filter(Bill.date >= start_date, Bill.date <= end_date)
+    
+    return query.order_by(Bill.date.desc()).all()
 
 def get_bills_count(db: Session, ledger_id: int, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
     """获取账本账单总数，支持时间筛选"""

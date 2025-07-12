@@ -35,13 +35,13 @@ export default function DashboardPage() {
     
     try {
       setLoading(true);
-      const response = await billsAPI.getBills(0, 1000, timeFilter, currentLedgerId); // 传递账本ID
+      const response = await billsAPI.getBills(timeFilter, currentLedgerId); // 只传递时间筛选和账本ID
       console.log("bills", response)
       
       if (response.data.success && response.data.data) {
-        const paginatedData = response.data.data;
-        console.log("获取到的bill 列表", paginatedData)
-        setBills(paginatedData || []);
+        const billsData = response.data.data;
+        console.log("获取到的bill 列表", billsData)
+        setBills(billsData || []);
       } else {
         setError(response.data.message || '获取账单失败');
       }

@@ -6,22 +6,20 @@ from datetime import datetime
 from app.db.database import get_db
 from app.models import User, Bill
 from app.schemas.bill import BillResponse, BillUpdate
-from app.schemas.base import BaseResponse, PaginatedResponse
+from app.schemas.base import BaseResponse
 from app.core.security.auth import get_current_user
 from app.crud.bill import (
-    get_bills, get_bills_count, get_bill,
+    get_bills_no_pagination, get_bill,
     update_bill, delete_bill
 )
 from app.crud.ledger import check_user_ledger_access
-from app.utils.response import success_response, error_response, paginated_response
+from app.utils.response import success_response, error_response
 
 router = APIRouter()
 
-@router.get("/", response_model=PaginatedResponse)
+@router.get("/", response_model=BaseResponse)
 def get_ledger_bills(
     ledger_id: int,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     current_user: User = Depends(get_current_user),
@@ -35,17 +33,13 @@ def get_ledger_bills(
     #         detail="无权限访问此账本"
     #     )
     
-    bills = get_bills(db, ledger_id, skip, limit, start_date, end_date)
-    total = get_bills_count(db, ledger_id, start_date, end_date)
+    bills = get_bills_no_pagination(db, ledger_id, start_date, end_date)
     
     # 使用Pydantic模型自动序列化
     bills_data = [BillResponse.model_validate(bill) for bill in bills]
     
-    return paginated_response(
+    return success_response(
         data=bills_data,
-        total=total,
-        skip=skip,
-        limit=limit,
         message="获取账单列表成功"
     )
 
