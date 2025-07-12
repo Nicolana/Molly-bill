@@ -335,7 +335,7 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
         ) : (
           <>
             {/* 清空聊天按钮 */}
-            <div className="flex justify-end">
+            {/* <div className="flex justify-end">
               <Button
                 variant="outline"
                 size="sm"
@@ -344,7 +344,7 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
               >
                 清空聊天记录
               </Button>
-            </div>
+            </div> */}
             
             {messages.map((message) => (
               <div key={message.id} className="space-y-2 sm:space-y-3">
