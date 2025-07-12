@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-import { MessageSquare, BarChart3, Calendar, TrendingUp, BookOpen, ChevronUp, ChevronDown } from 'lucide-react';
+import { MessageSquare, BookOpen, ChevronUp, ChevronDown } from 'lucide-react';
 import { Bill, BillCreate } from '@/types';
 import { billsAPI } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';

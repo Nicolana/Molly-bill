@@ -52,6 +52,7 @@ const categoryIcons: Record<string, React.ComponentType<any>> = {
 };
 
 export default function BillCard({ bill, index, showRecordLabel = true }: BillCardProps) {
+  console.log(index);
   const IconComponent = categoryIcons[bill.category || '其他'] || DollarSign;
   return (
     <Card className="bg-white shadow-sm hover:shadow-md transition-shadow py-0 w-full">

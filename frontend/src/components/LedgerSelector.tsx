@@ -40,7 +40,7 @@ export default function LedgerSelector({ selectedLedgerId, onLedgerChange, class
 
   useEffect(() => {
     fetchUserLedgers();
-  }, []);
+  }, [fetchUserLedgers]);
 
   // 获取当前选中的账本
   const selectedLedger = userLedgers.find(ul => ul.ledger?.id === selectedLedgerId);

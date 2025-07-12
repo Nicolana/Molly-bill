@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthState>()(
             const userResponse = await authAPI.getMe();
             set({ 
               token, 
-              user: userResponse.data, 
+              user: userResponse.data.data, 
               isAuthenticated: true, 
               isLoading: false 
             });

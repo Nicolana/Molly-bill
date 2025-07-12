@@ -25,7 +25,7 @@ export default function BillList({
   // 计算当日统计
   const totalIncome = bills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0);
   const totalExpense = bills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0);
-  const netAmount = totalIncome - totalExpense;
+  // const netAmount = totalIncome - totalExpense;
 
   return (
     <Card>

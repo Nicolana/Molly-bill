@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InvitationCreate } from '@/types';
-import { UserRole, ROLE_DISPLAY } from '@/constants/enums';
+import { UserRole } from '@/constants/enums';
 import { UserPlus, Mail, Shield, User } from 'lucide-react';
 
 interface InviteMemberDialogProps {

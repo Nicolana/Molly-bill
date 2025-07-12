@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { User, Bill, BillCreate, AuthResponse, LoginForm, RegisterForm, ChatRequest, ChatResponse, DBChatMessage, ChatHistoryResponse, Ledger, LedgerCreate, UserLedger, Invitation, InvitationCreate } from '@/types';
+import { User, Bill, BillCreate, AuthResponse, LoginForm, RegisterForm, ChatRequest, ChatResponse, DBChatMessage, Ledger, LedgerCreate, UserLedger, Invitation, InvitationCreate } from '@/types';
 
 // 统一响应格式接口
 interface BaseResponse<T = unknown> {

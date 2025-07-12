@@ -4,13 +4,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChatMessage, BillCreate, APIChatMessage, Bill } from '@/types';
-import { aiAPI, chatAPI } from '@/lib/api';
+import { ChatMessage, BillCreate, Bill } from '@/types';
+import { aiAPI } from '@/lib/api';
 import { Mic, MicOff, Camera, Send, Loader2, Trash2 } from 'lucide-react';
 import BillCard from './BillCard';
-import dayjs from 'dayjs';
-import 'dayjs/locale/zh-cn';
-
 
 interface ChatInterfaceProps {
   onBillsCreated?: (bills: Bill[]) => void;
@@ -105,7 +102,7 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
       // 当没有消息且加载完成时，确保显示在底部
       initializeScrollPosition();
     }
-  }, [messages, isLoadingHistory]);
+  }, [messages, isLoadingHistory, scrollToBottom, initializeScrollPosition]);
 
   // 添加消息到聊天（本地状态）
   const addMessage = (content: string, type: 'user' | 'assistant', bills?: Bill[] | BillCreate[]) => {

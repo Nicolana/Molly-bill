@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, BarChart3, LogOut, Menu, X, BookOpen } from 'lucide-react';
+import { BarChart3, LogOut, Menu, X, BookOpen } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -25,7 +25,7 @@ export default function TopNavigation() {
   };
 
   // 如果不在dashboard相关页面，不显示导航
-  if (!pathname.startsWith('/dashboard')) {
+  if (!pathname?.startsWith('/dashboard')) {
     return null;
   }
 

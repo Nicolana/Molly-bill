@@ -175,7 +175,7 @@ export default function MembersManagementDialog({
       
       return () => clearInterval(interval);
     }
-  }, [open, ledgerId]);
+  }, [open, ledgerId, fetchMembers, fetchInvitations]);
 
   // 根据角色获取角色显示信息
   const getRoleDisplay = (role: string, isOwner: boolean = false) => {
