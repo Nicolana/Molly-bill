@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
   Coffee, 
@@ -22,12 +22,15 @@ import {
   DollarSign
 } from 'lucide-react';
 import { Bill, BillCreate } from '@/types';
+import BillDetailDialog from './BillDetailDialog';
 import dayjs from 'dayjs';
 
 interface BillCardProps {
   bill: Bill | BillCreate;
   index: number;
   showRecordLabel?: boolean; // 是否显示"已记录"标签
+  onUpdate?: (id: number, data: Partial<BillCreate>) => Promise<void>;
+  onDelete?: (id: number) => Promise<void>;
 }
 
 // 分类图标映射
@@ -51,11 +54,26 @@ const categoryIcons: Record<string, React.ComponentType<any>> = {
   '其他': DollarSign
 };
 
-export default function BillCard({ bill, index, showRecordLabel = true }: BillCardProps) {
+export default function BillCard({ bill, index, showRecordLabel = true, onUpdate, onDelete }: BillCardProps) {
   console.log(index);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
   const IconComponent = categoryIcons[bill.category || '其他'] || DollarSign;
+  
+  // 检查是否为完整的 Bill 对象（有 id 属性）
+  const isFullBill = 'id' in bill;
+  
+  const handleCardClick = () => {
+    // 只有完整的 Bill 对象才能打开详情弹窗
+    if (isFullBill) {
+      setShowDetailDialog(true);
+    }
+  };
+  
   return (
-    <Card className="bg-white shadow-sm hover:shadow-md transition-shadow py-0 w-full">
+    <>
+      <Card className={`bg-white shadow-sm hover:shadow-md transition-shadow py-0 w-full ${
+        isFullBill ? 'cursor-pointer' : ''
+      }`} onClick={handleCardClick}>
       <CardContent className="p-3 sm:p-4 min-w-0">
         {/* 顶部区域 */}
         <div className="flex items-center justify-between mb-2 sm:mb-3">
@@ -105,5 +123,17 @@ export default function BillCard({ bill, index, showRecordLabel = true }: BillCa
         </div>
       </CardContent>
     </Card>
+    
+    {/* 详情弹窗 */}
+    {isFullBill && (
+      <BillDetailDialog
+        open={showDetailDialog}
+        onClose={() => setShowDetailDialog(false)}
+        bill={bill as Bill}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+      />
+    )}
+  </>
   );
 } 

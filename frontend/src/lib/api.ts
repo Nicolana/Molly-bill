@@ -76,6 +76,7 @@ export const billsAPI = {
     params: { skip, limit, time_filter: timeFilter, ledger_id: ledgerId }
   }),
   createBill: (data: BillCreate) => api.post<BaseResponse<Bill>>('/bills/', data),
+  updateBill: (id: number, data: Partial<BillCreate>) => api.put<BaseResponse<Bill>>(`/bills/${id}`, data),
   deleteBill: (id: number) => api.delete<BaseResponse>(`/bills/${id}`),
 };
 

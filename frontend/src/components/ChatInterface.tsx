@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChatMessage, BillCreate, Bill } from '@/types';
-import { aiAPI } from '@/lib/api';
+import { aiAPI, billsAPI } from '@/lib/api';
 import { Mic, MicOff, Camera, Send, Loader2, Trash2 } from 'lucide-react';
 import BillCard from './BillCard';
 
@@ -318,6 +318,68 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
     }
   };
 
+  // 更新账单
+  const handleUpdateBill = async (id: number, data: Partial<BillCreate>) => {
+    try {
+      const response = await billsAPI.updateBill(id, data);
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || '更新账单失败');
+      }
+      
+      // 更新本地消息中的账单信息
+      setMessages(prev => prev.map(msg => {
+        if (msg.bills) {
+          return {
+            ...msg,
+            bills: msg.bills.map(bill => 
+              bill.id === id ? { ...bill, ...data } : bill
+            )
+          };
+        }
+        return msg;
+      }));
+      
+      // 通知父组件账单已更新
+      if (onBillsCreated) {
+        // 这里可以触发账单列表刷新
+        onBillsCreated([]);
+      }
+    } catch (error) {
+      console.error('更新账单失败:', error);
+      throw error;
+    }
+  };
+
+  // 删除账单
+  const handleDeleteBill = async (id: number) => {
+    try {
+      const response = await billsAPI.deleteBill(id);
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || '删除账单失败');
+      }
+      
+      // 从本地消息中移除账单
+      setMessages(prev => prev.map(msg => {
+        if (msg.bills) {
+          return {
+            ...msg,
+            bills: msg.bills.filter(bill => bill.id !== id)
+          };
+        }
+        return msg;
+      }));
+      
+      // 通知父组件账单已删除
+      if (onBillsCreated) {
+        // 这里可以触发账单列表刷新
+        onBillsCreated([]);
+      }
+    } catch (error) {
+      console.error('删除账单失败:', error);
+      throw error;
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* 聊天消息区域 */}
@@ -379,7 +441,13 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
                   <div className="flex justify-start">
                     <div className="max-w-[85%] sm:max-w-xs lg:max-w-md space-y-2">
                       {message.bills.map((bill: BillCreate, index) => (
-                        <BillCard key={index} bill={bill} index={index} />
+                        <BillCard 
+                          key={index} 
+                          bill={bill} 
+                          index={index}
+                          onUpdate={handleUpdateBill}
+                          onDelete={handleDeleteBill}
+                        />
                       ))}
                     </div>
                   </div>
