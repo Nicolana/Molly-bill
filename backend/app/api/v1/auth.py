@@ -5,10 +5,11 @@ from pydantic import BaseModel
 from app.db.database import get_db
 from app.models import User
 from app.schemas.auth import UserCreate, UserResponse
+from app.schemas.base import BaseResponse
 from app.core.security.auth import create_access_token, get_current_user
 from app.crud.user import get_user_by_email, create_user
 from app.core.security.password import verify_password
-from app.utils.response import success_response
+from app.utils.response import success_response, error_response
 
 router = APIRouter()
 
@@ -16,15 +17,15 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
-@router.post("/register")
+@router.post("/register", response_model=BaseResponse)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     """用户注册"""
     # 检查邮箱是否已存在
     db_user = get_user_by_email(db, email=user.email)
     if db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="邮箱已被注册"
+        return error_response(
+            message="邮箱已被注册",
+            error_code="EMAIL_ALREADY_EXISTS"
         )
     
     # 设置默认值
@@ -42,16 +43,15 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         message="注册成功"
     )
 
-@router.post("/login")
+@router.post("/login", response_model=BaseResponse)
 def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     """用户登录"""
     # 验证用户
     user = get_user_by_email(db, email=login_data.email)
     if not user or not verify_password(login_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="邮箱或密码错误",
-            headers={"WWW-Authenticate": "Bearer"},
+        return error_response(
+            message="邮箱或密码错误",
+            error_code="INVALID_CREDENTIALS"
         )
     
     # 生成访问令牌
@@ -65,7 +65,7 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         message="登录成功"
     )
 
-@router.get("/me")
+@router.get("/me", response_model=BaseResponse)
 def get_current_user_info(current_user: User = Depends(get_current_user)):
     """获取当前用户信息"""
     return success_response(
