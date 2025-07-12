@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-import { MessageSquare, BarChart3, Calendar, TrendingUp, BookOpen } from 'lucide-react';
+import { MessageSquare, BarChart3, Calendar, TrendingUp, BookOpen, ChevronUp, ChevronDown } from 'lucide-react';
 import { Bill, BillCreate } from '@/types';
 import { billsAPI } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'month' | 'year'>('month'); // 新增时间筛选
+  const [isChatExpanded, setIsChatExpanded] = useState(false); // 移动端聊天展开状态
   
   // 使用全局账本状态
   const { currentLedgerId, userLedgers, fetchUserLedgers, getCurrentLedger } = useLedgerStore();
@@ -217,8 +218,9 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="h-[calc(100vh-65px)] bg-gray-50">
-        <div className="flex h-full">
+      <div className="min-h-[calc(100vh-65px)] bg-gray-50">
+        {/* 桌面端布局 */}
+        <div className="hidden lg:flex h-[calc(100vh-65px)]">
           {/* 左侧聊天区域 */}
           <div className="w-1/2 border-r border-gray-200">
             <Card className="h-full rounded-none border-0">
@@ -447,6 +449,244 @@ export default function DashboardPage() {
                 onDeleteBill={deleteBill}
               />
             </div>
+          </div>
+        </div>
+
+        {/* 移动端布局 */}
+        <div className="lg:hidden">
+          {/* 移动端AI助手区域 */}
+          <div className="sticky top-0 z-10 bg-white border-b shadow-sm">
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="h-5 w-5 text-blue-600" />
+                <span className="font-medium">AI记账助手</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Link href="/dashboard/ledgers">
+                  <Button variant="outline" size="sm" className="text-xs">
+                    <BookOpen className="h-3 w-3 mr-1" />
+                    {currentLedgerId ? 
+                      userLedgers.find(ul => ul.ledger?.id === currentLedgerId)?.ledger?.name || '选择账本' : 
+                      '选择账本'
+                    }
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsChatExpanded(!isChatExpanded)}
+                >
+                  {isChatExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            
+            {/* 可展开的聊天区域 */}
+            {isChatExpanded && (
+              <div className="border-t bg-gray-50">
+                <div className="h-96">
+                  <ChatInterface 
+                    onBillsCreated={handleBillsCreated} 
+                    selectedLedgerId={currentLedgerId || undefined}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 移动端主要内容区域 */}
+          <div className="p-4 space-y-4">
+            {/* 时间筛选 - 移动端 */}
+            <div className="flex flex-col space-y-3">
+              <h2 className="text-lg font-semibold text-gray-800">
+                {timeFilter === 'today' && '今日统计'}
+                {timeFilter === 'month' && '本月统计'}
+                {timeFilter === 'year' && '本年统计'}
+                {timeFilter === 'all' && '全部统计'}
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={timeFilter === 'today' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTimeFilter('today')}
+                >
+                  今日
+                </Button>
+                <Button
+                  variant={timeFilter === 'month' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTimeFilter('month')}
+                >
+                  本月
+                </Button>
+                <Button
+                  variant={timeFilter === 'year' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTimeFilter('year')}
+                >
+                  本年
+                </Button>
+                <Button
+                  variant={timeFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTimeFilter('all')}
+                >
+                  全部
+                </Button>
+              </div>
+            </div>
+
+            {/* 统计卡片 - 移动端优化 */}
+            <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-400/20 via-green-300/15 to-teal-200/20 backdrop-blur-md border-0">
+              <div className="absolute inset-0 opacity-10">
+                <img 
+                  src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" 
+                  alt="Finance background"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              
+              <CardContent className="p-4 relative z-10">
+                <div className="space-y-4">
+                  {/* 主要区域 - 支出 */}
+                  <div className="text-center">
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">总支出</h3>
+                    <div className="text-2xl sm:text-3xl font-bold text-gray-800">
+                      ¥{bills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
+                    </div>
+                    <div className="flex items-center justify-center space-x-1 text-xs text-gray-600 mt-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" />
+                      </svg>
+                      <span>本月支出</span>
+                    </div>
+                  </div>
+                  
+                  {/* 次要信息 - 横向布局 */}
+                  <div className="flex justify-around border-t pt-4">
+                    <div className="text-center">
+                      <div className="text-xs text-gray-600 mb-1">总收入</div>
+                      <div className="text-lg font-semibold text-green-600">
+                        ¥{bills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs text-gray-600 mb-1">账单数量</div>
+                      <div className="text-lg font-semibold text-emerald-600">
+                        {totalCount}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 收支趋势柱状图 - 移动端优化 */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex flex-col space-y-3">
+                  <CardTitle className="text-base">
+                    {timeFilter === 'today' && '今日收支趋势'}
+                    {timeFilter === 'month' && '本月收支趋势'}
+                    {timeFilter === 'year' && '本年收支趋势'}
+                    {timeFilter === 'all' && '收支趋势'}
+                  </CardTitle>
+                  {timeFilter === 'all' && (
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant={dateRange === '7d' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDateRange('7d')}
+                      >
+                        7天
+                      </Button>
+                      <Button
+                        variant={dateRange === '30d' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDateRange('30d')}
+                      >
+                        30天
+                      </Button>
+                      <Button
+                        variant={dateRange === '90d' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setDateRange('90d')}
+                      >
+                        90天
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-48 sm:h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={generateDateRangeData()}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="date" 
+                        fontSize={12}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis fontSize={12} />
+                      <Tooltip formatter={(value) => [`¥${value}`, '金额']} />
+                      <Bar dataKey="income" fill="#10b981" name="收入" />
+                      <Bar dataKey="expense" fill="#ef4444" name="支出" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 分类统计饼图 - 移动端优化 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {timeFilter === 'today' && '今日分类统计'}
+                  {timeFilter === 'month' && '本月分类统计'}
+                  {timeFilter === 'year' && '本年分类统计'}
+                  {timeFilter === 'all' && '分类统计'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-48 sm:h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={generatePieData()}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                        outerRadius={60}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {generatePieData().map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => [`¥${value}`, '金额']} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 支出热力图 - 移动端 */}
+            <CalendarView 
+              bills={bills}
+              selectedDate={selectedDate}
+              onDateSelect={handleDateSelect}
+            />
+
+            {/* 账单列表 - 移动端 */}
+            <BillList 
+              bills={selectedDateBills}
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+              onDeleteBill={deleteBill}
+            />
           </div>
         </div>
       </div>

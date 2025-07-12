@@ -97,28 +97,6 @@ export default function TopNavigation() {
                   <span>仪表盘</span>
                 </Button>
               </Link>
-              <Link href="/dashboard/chat">
-                <Button
-                  variant={isActive('/dashboard/chat') ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center space-x-2 justify-start w-full"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  <span>AI助手</span>
-                </Button>
-              </Link>
-              <Link href="/dashboard/bills">
-                <Button
-                  variant={isActive('/dashboard/bills') ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center space-x-2 justify-start w-full"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  <span>账单记录</span>
-                </Button>
-              </Link>
               <Link href="/dashboard/ledgers">
                 <Button
                   variant={isActive('/dashboard/ledgers') ? 'default' : 'ghost'}

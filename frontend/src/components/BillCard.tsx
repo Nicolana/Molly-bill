@@ -54,10 +54,10 @@ const categoryIcons: Record<string, React.ComponentType<any>> = {
 export default function BillCard({ bill, index, showRecordLabel = true }: BillCardProps) {
   const IconComponent = categoryIcons[bill.category || '其他'] || DollarSign;
   return (
-    <Card className="bg-white shadow-sm hover:shadow-md transition-shadow py-0">
-      <CardContent className="p-4 min-w-[300px]">
+    <Card className="bg-white shadow-sm hover:shadow-md transition-shadow py-0 w-full">
+      <CardContent className="p-3 sm:p-4 min-w-0">
         {/* 顶部区域 */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
           {showRecordLabel ? (
             <div className="text-xs text-gray-500">已记录：{bill.type === 'expense' ? '支出' : '收入'}</div>
           ) : <div></div> }
@@ -67,33 +67,33 @@ export default function BillCard({ bill, index, showRecordLabel = true }: BillCa
         </div>
         
         {/* 主要内容区域 */}
-        <div className="flex items-start space-x-3">
+        <div className="flex items-start space-x-2 sm:space-x-3">
           {/* 左侧图标 */}
           <div className="flex-shrink-0">
-            <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100">
-              <IconComponent className="h-6 w-6 text-blue-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-full flex items-center justify-center border border-blue-100">
+              <IconComponent className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
             </div>
           </div>
           
           {/* 中间内容 */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 {/* 分类作为标题 */}
-                <h4 className="font-medium text-gray-900 mb-1">
+                <h4 className="font-medium text-gray-900 mb-1 text-sm sm:text-base">
                   {bill.category || '未分类'}
                 </h4>
                 {/* 描述作为副标题 */}
                 {bill.description && (
-                  <p className="text-sm text-gray-600 truncate">
+                  <p className="text-xs sm:text-sm text-gray-600 truncate">
                     {bill.description}
                   </p>
                 )}
               </div>
               
               {/* 右侧金额 */}
-              <div className="flex-shrink-0 ml-3">
-                <span className={`font-semibold text-lg ${
+              <div className="flex-shrink-0 ml-2 sm:ml-3">
+                <span className={`font-semibold text-base sm:text-lg ${
                   bill.type === 'income' ? 'text-green-600' : 'text-gray-900'
                 }`}>
                   {bill.type === 'income' ? '+' : '-'}¥{bill.amount.toFixed(2)}

@@ -315,16 +315,16 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   return (
     <div className="flex flex-col h-full">
       {/* 聊天消息区域 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4">
         {isLoadingHistory ? (
           <div className="flex justify-center items-center h-32">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2">加载聊天记录...</span>
+            <span className="ml-2 text-sm">加载聊天记录...</span>
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-gray-500 mt-8">
-            <p className="text-lg font-medium">欢迎使用AI记账助手！</p>
-            <p className="text-sm mt-2">你可以通过文字、语音或图片来记录账单</p>
+          <div className="text-center text-gray-500 mt-4 sm:mt-8">
+            <p className="text-base sm:text-lg font-medium">欢迎使用AI记账助手！</p>
+            <p className="text-xs sm:text-sm mt-2">你可以通过文字、语音或图片来记录账单</p>
           </div>
         ) : (
           <>
@@ -334,23 +334,23 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
                 variant="outline"
                 size="sm"
                 onClick={clearChat}
-                className="text-gray-500 hover:text-red-500"
+                className="text-gray-500 hover:text-red-500 text-xs"
               >
                 清空聊天记录
               </Button>
             </div>
             
             {messages.map((message) => (
-              <div key={message.id} className="space-y-3">
+              <div key={message.id} className="space-y-2 sm:space-y-3">
                 {/* 消息卡片 */}
                 <div className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <Card className={`max-w-xs lg:max-w-md relative py-0 ${
+                  <Card className={`max-w-[85%] sm:max-w-xs lg:max-w-md relative py-0 ${
                     message.type === 'user' 
                       ? 'bg-blue-500 text-white' 
                       : 'bg-white shadow-sm hover:shadow-md transition-shadow py-0'
                   }`}>
-                    <CardContent className="p-3">
-                      <p className="text-sm">{message.content}</p>
+                    <CardContent className="p-2 sm:p-3">
+                      <p className="text-xs sm:text-sm break-words">{message.content}</p>
                       {/* <p className="text-xs opacity-70 mt-1">
                         {dayjs(message.timestamp).locale('zh-cn').format('YYYY-MM-DD HH:mm:ss')}
                       </p> */}
@@ -361,9 +361,9 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
                       variant="ghost"
                       size="sm"
                       onClick={() => deleteMessage(message.id)}
-                      className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 hover:opacity-100 transition-opacity"
+                      className="absolute top-0.5 right-0.5 h-5 w-5 sm:h-6 sm:w-6 p-0 opacity-0 hover:opacity-100 transition-opacity"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                     </Button>
                   </Card>
                 </div>
@@ -371,7 +371,7 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
                 {/* 账单卡片 - 单独显示 */}
                 {message.bills && message.bills.length > 0 && (
                   <div className="flex justify-start">
-                    <div className="max-w-xs lg:max-w-md space-y-2">
+                    <div className="max-w-[85%] sm:max-w-xs lg:max-w-md space-y-2">
                       {message.bills.map((bill: BillCreate, index) => (
                         <BillCard key={index} bill={bill} index={index} />
                       ))}
@@ -385,11 +385,11 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
         
         {isLoading && (
           <div className="flex justify-start">
-            <Card className="bg-gray-100">
-              <CardContent className="p-3">
+            <Card className="bg-gray-100 max-w-[85%] sm:max-w-xs">
+              <CardContent className="p-2 sm:p-3">
                 <div className="flex items-center space-x-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">AI正在思考...</span>
+                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                  <span className="text-xs sm:text-sm">AI正在思考...</span>
                 </div>
               </CardContent>
             </Card>
@@ -400,16 +400,18 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
       </div>
 
       {/* 输入区域 */}
-      <div className="border-t p-4 bg-white">
-        <div className="flex items-center space-x-2">
+      <div className="border-t p-2 sm:p-4 bg-white">
+        <div className="flex items-center space-x-1 sm:space-x-2">
           {/* 图片上传按钮 */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
+            className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3"
           >
-            <Camera className="h-4 w-4" />
+            <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline ml-1">图片</span>
           </Button>
           
           {/* 语音按钮 */}
@@ -418,9 +420,18 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
             size="sm"
             onClick={isRecording ? stopRecording : startRecording}
             disabled={isLoading}
-            className={isRecording ? 'bg-red-500 text-white' : ''}
+            className={`flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3 ${
+              isRecording ? 'bg-red-500 text-white hover:bg-red-600' : ''
+            }`}
           >
-            {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            {isRecording ? (
+              <MicOff className="h-3 w-3 sm:h-4 sm:w-4" />
+            ) : (
+              <Mic className="h-3 w-3 sm:h-4 sm:w-4" />
+            )}
+            <span className="hidden sm:inline ml-1">
+              {isRecording ? '停止' : '语音'}
+            </span>
           </Button>
           
           {/* 文本输入 */}
@@ -428,8 +439,8 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="输入记账信息，如：今天在星巴克花了35元..."
-            className="flex-1"
+            placeholder="输入记账信息..."
+            className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
             disabled={isLoading}
           />
           
@@ -438,8 +449,10 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
             onClick={sendMessage}
             disabled={!inputValue.trim() || isLoading}
             size="sm"
+            className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline ml-1">发送</span>
           </Button>
         </div>
         

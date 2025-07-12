@@ -72,30 +72,30 @@ export default function CalendarView({ bills, selectedDate, onDateSelect }: Cale
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>支出热力图</CardTitle>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
-              <ChevronLeft className="h-4 w-4" />
+      <CardHeader className="pb-3">
+        <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+          <CardTitle className="text-base sm:text-lg">支出热力图</CardTitle>
+          <div className="flex items-center justify-between sm:justify-end space-x-2">
+            <Button variant="outline" size="sm" onClick={goToPreviousMonth} className="h-8 w-8 p-0">
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={goToToday}>
+            <Button variant="outline" size="sm" onClick={goToToday} className="text-xs px-2 h-8">
               今天
             </Button>
-            <Button variant="outline" size="sm" onClick={goToNextMonth}>
-              <ChevronRight className="h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={goToNextMonth} className="h-8 w-8 p-0">
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>
-        <div className="text-lg font-semibold text-center">
+        <div className="text-base sm:text-lg font-semibold text-center">
           {dayjs(currentMonth).locale('zh-cn').format('YYYY年MM月')}
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
           {/* 星期标题 */}
           {['日', '一', '二', '三', '四', '五', '六'].map(day => (
-            <div key={day} className="h-8 flex items-center justify-center text-sm font-medium text-gray-500">
+            <div key={day} className="h-6 sm:h-8 flex items-center justify-center text-xs sm:text-sm font-medium text-gray-500">
               {day}
             </div>
           ))}
@@ -110,9 +110,9 @@ export default function CalendarView({ bills, selectedDate, onDateSelect }: Cale
             return (
               <div
                 key={index}
-                className={`h-16 border border-gray-200 p-1 cursor-pointer hover:opacity-80 transition-all ${
+                className={`h-12 sm:h-16 border border-gray-200 p-0.5 sm:p-1 cursor-pointer hover:opacity-80 transition-all ${
                   !isCurrentMonth ? 'opacity-30' : ''
-                } ${isSelected ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                } ${isSelected ? 'ring-1 sm:ring-2 ring-blue-500 ring-offset-1' : ''}`}
                 style={{ backgroundColor }}
                 onClick={() => onDateSelect(date)}
               >
@@ -128,7 +128,7 @@ export default function CalendarView({ bills, selectedDate, onDateSelect }: Cale
                         <div className={`text-xs font-medium ${
                           dayExpense > maxExpense * 0.5 ? 'text-white' : 'text-red-600'
                         }`}>
-                          ¥{dayExpense.toFixed(0)}
+                          <span className="hidden sm:inline">¥</span>{dayExpense.toFixed(0)}
                         </div>
                       </div>
                     </div>
@@ -140,21 +140,21 @@ export default function CalendarView({ bills, selectedDate, onDateSelect }: Cale
         </div>
         
         {/* 图例 */}
-        <div className="mt-4 flex items-center justify-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-gray-100 border border-gray-300"></div>
+        <div className="mt-3 sm:mt-4 flex items-center justify-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-100 border border-gray-300"></div>
             <span className="text-xs text-gray-600">无支出</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-red-200 border border-gray-300"></div>
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-200 border border-gray-300"></div>
             <span className="text-xs text-gray-600">低支出</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-red-400 border border-gray-300"></div>
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-400 border border-gray-300"></div>
             <span className="text-xs text-gray-600">中支出</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-red-600 border border-gray-300"></div>
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-600 border border-gray-300"></div>
             <span className="text-xs text-gray-600">高支出</span>
           </div>
         </div>
