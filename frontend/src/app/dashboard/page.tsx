@@ -191,18 +191,17 @@ export default function DashboardPage() {
   };
 
   // 获取选中日期的账单
-  const getSelectedDateBills = () => {
-    const dayStart = dayjs(selectedDate).startOf('day');
-    const dayEnd = dayjs(selectedDate).endOf('day');
+  // const getSelectedDateBills = () => {
+  //   const dayStart = dayjs(selectedDate).startOf('day');
+  //   const dayEnd = dayjs(selectedDate).endOf('day');
     
-    return bills.filter(bill => {
-      const billDate = dayjs(bill.date);
-      return billDate.isSame(dayStart, 'day') || (billDate.isAfter(dayStart) && billDate.isBefore(dayEnd));
-    });
-  };
+  //   return bills.filter(bill => {
+  //     const billDate = dayjs(bill.date);
+  //     return billDate.isSame(dayStart, 'day') || (billDate.isAfter(dayStart) && billDate.isBefore(dayEnd));
+  //   });
+  // };
 
-  const selectedDateBills = getSelectedDateBills();
-  const selectedDateTotal = selectedDateBills.reduce((sum, bill) => sum + bill.amount, 0);
+  // const selectedDateBills = getSelectedDateBills();
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
@@ -443,7 +442,7 @@ export default function DashboardPage() {
 
               {/* 账单列表 */}
               <BillList 
-                bills={selectedDateBills}
+                bills={bills}
                 selectedDate={selectedDate}
                 onDateChange={setSelectedDate}
                 onDeleteBill={deleteBill}
@@ -643,7 +642,7 @@ export default function DashboardPage() {
 
               {/* 账单列表 - 移动端 */}
               <BillList 
-                bills={selectedDateBills}
+                bills={bills}
                 selectedDate={selectedDate}
                 onDateChange={setSelectedDate}
                 onDeleteBill={deleteBill}

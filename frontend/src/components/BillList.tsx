@@ -108,7 +108,7 @@ export default function BillList({
             {bills.map((bill, index) => (
               <div key={bill.id} className="relative group">
                 <BillCard bill={bill} index={index} showRecordLabel={false} />
-                <div className="absolute top-2 sm:top-3 right-2 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                {/* <div className="absolute top-2 sm:top-3 right-2 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                   <button
                     onClick={() => onDeleteBill(bill.id)}
                     className="w-6 h-6 sm:w-7 sm:h-7 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all duration-200 hover:scale-110"
@@ -118,7 +118,7 @@ export default function BillList({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>
-                </div>
+                </div> */}
               </div>
             ))}
           </div>
