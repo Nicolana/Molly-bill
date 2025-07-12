@@ -346,6 +346,21 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
+              {/* 支出热力图 */}
+              <CalendarView 
+                bills={bills}
+                selectedDate={selectedDate}
+                onDateSelect={handleDateSelect}
+              />
+
+              {/* 账单列表 */}
+              <BillList 
+                bills={bills}
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+                onDeleteBill={deleteBill}
+              />
+
               {/* 收支趋势柱状图 */}
               <IncomeExpenseChart 
                 data={generateDateRangeData()}
@@ -389,20 +404,7 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* 支出热力图 */}
-              <CalendarView 
-                bills={bills}
-                selectedDate={selectedDate}
-                onDateSelect={handleDateSelect}
-              />
-
-              {/* 账单列表 */}
-              <BillList 
-                bills={bills}
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-                onDeleteBill={deleteBill}
-              />
+              
             </div>
           </div>
         </div>
@@ -497,6 +499,21 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
+               {/* 支出热力图 - 移动端 */}
+               <CalendarView 
+                bills={bills}
+                selectedDate={selectedDate}
+                onDateSelect={handleDateSelect}
+              />
+
+              {/* 账单列表 - 移动端 */}
+              <BillList 
+                bills={bills}
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+                onDeleteBill={deleteBill}
+              />
+
               {/* 收支趋势柱状图 - 移动端优化 */}
               <IncomeExpenseChart 
                 data={generateDateRangeData()}
@@ -540,20 +557,7 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* 支出热力图 - 移动端 */}
-              <CalendarView 
-                bills={bills}
-                selectedDate={selectedDate}
-                onDateSelect={handleDateSelect}
-              />
-
-              {/* 账单列表 - 移动端 */}
-              <BillList 
-                bills={bills}
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-                onDeleteBill={deleteBill}
-              />
+             
             </div>
           </div>
 
