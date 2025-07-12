@@ -11,9 +11,10 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import ChatInterface from '@/components/ChatInterface';
 import CalendarView from '@/components/CalendarView';
 import BillList from '@/components/BillList';
+import IncomeExpenseChart from '@/components/IncomeExpenseChart';
 import { useLedgerStore } from '@/store/ledger';
 import Link from 'next/link';
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 
@@ -346,57 +347,12 @@ export default function DashboardPage() {
               </Card>
 
               {/* 收支趋势柱状图 */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>
-                      {timeFilter === 'today' && '今日收支趋势'}
-                      {timeFilter === 'month' && '本月收支趋势'}
-                      {timeFilter === 'year' && '本年收支趋势'}
-                      {timeFilter === 'all' && '收支趋势'}
-                    </CardTitle>
-                    {timeFilter === 'all' && (
-                      <div className="flex space-x-2">
-                        <Button
-                          variant={dateRange === '7d' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setDateRange('7d')}
-                        >
-                          7天
-                        </Button>
-                        <Button
-                          variant={dateRange === '30d' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setDateRange('30d')}
-                        >
-                          30天
-                        </Button>
-                        <Button
-                          variant={dateRange === '90d' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setDateRange('90d')}
-                        >
-                          90天
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={generateDateRangeData()}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip formatter={(value) => [`¥${value}`, '金额']} />
-                        <Bar dataKey="income" fill="#10b981" name="收入" />
-                        <Bar dataKey="expense" fill="#ef4444" name="支出" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
+              <IncomeExpenseChart 
+                data={generateDateRangeData()}
+                timeFilter={timeFilter}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+              />
 
               {/* 分类统计饼图 */}
               <Card>
@@ -542,61 +498,12 @@ export default function DashboardPage() {
               </Card>
 
               {/* 收支趋势柱状图 - 移动端优化 */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex flex-col space-y-3">
-                    <CardTitle className="text-base">
-                      {timeFilter === 'today' && '今日收支趋势'}
-                      {timeFilter === 'month' && '本月收支趋势'}
-                      {timeFilter === 'year' && '本年收支趋势'}
-                      {timeFilter === 'all' && '收支趋势'}
-                    </CardTitle>
-                    {timeFilter === 'all' && (
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          variant={dateRange === '7d' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setDateRange('7d')}
-                        >
-                          7天
-                        </Button>
-                        <Button
-                          variant={dateRange === '30d' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setDateRange('30d')}
-                        >
-                          30天
-                        </Button>
-                        <Button
-                          variant={dateRange === '90d' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setDateRange('90d')}
-                        >
-                          90天
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-48 sm:h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={generateDateRangeData()}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="date" 
-                          fontSize={12}
-                          interval="preserveStartEnd"
-                        />
-                        <YAxis fontSize={12} />
-                        <Tooltip formatter={(value) => [`¥${value}`, '金额']} />
-                        <Bar dataKey="income" fill="#10b981" name="收入" />
-                        <Bar dataKey="expense" fill="#ef4444" name="支出" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
+              <IncomeExpenseChart 
+                data={generateDateRangeData()}
+                timeFilter={timeFilter}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+              />
 
               {/* 分类统计饼图 - 移动端优化 */}
               <Card>
