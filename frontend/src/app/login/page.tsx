@@ -198,91 +198,130 @@ export default function LoginPage() {
 
   return (
     <PublicRoute>
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>登录</CardTitle>
-          <CardDescription>登录您的Molly Bill账户</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (emailError) validateEmail(e.target.value);
-                }}
-                onBlur={() => validateEmail(email)}
-                required
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
+        <Card className="w-full max-w-md mx-auto shadow-lg">
+          <CardHeader className="text-center space-y-2 pb-6">
+            <CardTitle className="text-2xl font-bold text-gray-900">登录账户</CardTitle>
+            <CardDescription className="text-base text-gray-600">
+              登录您的Molly Bill账户
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-3">
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  邮箱地址
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (emailError) validateEmail(e.target.value);
+                  }}
+                  onBlur={() => validateEmail(email)}
+                  placeholder="请输入您的邮箱地址"
+                  required
+                  disabled={loading}
+                  className={`h-12 text-base ${emailError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                  autoComplete="email"
+                />
+                {emailError && (
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {emailError}
+                  </p>
+                )}
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  密码
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (passwordError) validatePassword(e.target.value);
+                  }}
+                  onBlur={() => validatePassword(password)}
+                  placeholder="请输入您的密码"
+                  required
+                  disabled={loading}
+                  className={`h-12 text-base ${passwordError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                  autoComplete="current-password"
+                />
+                {passwordError && (
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {passwordError}
+                  </p>
+                )}
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base font-medium relative" 
                 disabled={loading}
-                className={emailError ? 'border-red-500 focus-visible:ring-red-500' : ''}
-              />
-              {emailError && (
-                <p className="text-red-500 text-sm">{emailError}</p>
-              )}
+              >
+                {loading ? (
+                  <>
+                    <div className="absolute left-4">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    </div>
+                    登录中...
+                  </>
+                ) : (
+                  '登录'
+                )}
+              </Button>
+              
+              <p className="text-xs text-gray-500 text-center">
+                提示：按 Enter 键快速登录
+              </p>
+            </form>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-2 text-gray-500">或者</span>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">密码</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (passwordError) validatePassword(e.target.value);
+            
+            <div className="text-center space-y-3">
+              <button
+                type="button"
+                onClick={() => router.push('/register')}
+                className="text-blue-600 hover:text-blue-800 font-medium text-base transition-colors duration-200"
+              >
+                还没有账户？立即注册
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  toast.info('忘记密码功能', {
+                    description: '请联系管理员重置密码',
+                    duration: 4000,
+                  });
                 }}
-                onBlur={() => validatePassword(password)}
-                required
-                disabled={loading}
-                className={passwordError ? 'border-red-500 focus-visible:ring-red-500' : ''}
-              />
-              {passwordError && (
-                <p className="text-red-500 text-sm">{passwordError}</p>
-              )}
-            </div>
-            <Button 
-              type="submit" 
-              className="w-full relative" 
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <div className="absolute left-4">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  </div>
-                  登录中...
-                </>
-              ) : (
-                '登录'
-              )}
-            </Button>
-            <p className="text-xs text-gray-500 text-center">
-              提示：按 Enter 键快速登录
-            </p>
-          </form>
-          <div className="mt-4 space-y-2 text-center">
-            <a href="/register" className="text-blue-600 hover:underline text-sm">
-              还没有账户？立即注册
-            </a>
-            <div className="text-xs text-gray-500">
-              <a href="#" className="hover:text-gray-700" onClick={(e) => {
-                e.preventDefault();
-                toast.info('忘记密码功能', {
-                  description: '请联系管理员重置密码',
-                  duration: 4000,
-                });
-              }}>
+                className="block w-full text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
+              >
                 忘记密码？
-              </a>
+              </button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </div>
     </PublicRoute>
   );
 } 
