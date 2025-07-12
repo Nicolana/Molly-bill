@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime
+from datetime import datetime, date
 
 from app.db.database import get_db
 from app.models import User
@@ -79,13 +79,26 @@ async def chat_with_ai(
         if ai_response.get("bills"):
             for bill_data in ai_response["bills"]:
                 try:
+                    # 处理日期信息
+                    bill_date = datetime.now()
+                    if "date" in bill_data and bill_data["date"]:
+                        try:
+                            # 尝试解析AI返回的日期字符串
+                            if isinstance(bill_data["date"], str):
+                                bill_date = datetime.strptime(bill_data["date"], "%Y-%m-%d")
+                            elif isinstance(bill_data["date"], date):
+                                bill_date = datetime.combine(bill_data["date"], datetime.min.time())
+                        except (ValueError, TypeError):
+                            # 如果日期解析失败，使用当前日期
+                            bill_date = datetime.now()
+                    
                     # 创建账单
                     bill_create = BillCreate(
                         amount=bill_data["amount"],
                         type=BillType(bill_data["type"]),
                         description=bill_data.get("description", ""),
                         category=bill_data.get("category", "其他"),
-                        date=datetime.now(),
+                        date=bill_date,
                         ledger_id=chat_request.ledger_id
                     )
                     
