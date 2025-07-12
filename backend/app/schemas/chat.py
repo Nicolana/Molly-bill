@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import datetime
+from app.schemas.bill import BillResponse
 
 class ChatMessageBase(BaseModel):
     content: str
@@ -34,5 +35,5 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     message: str
     user_id: int
-    bills: Optional[List[dict]] = None
+    bills: Optional[List[BillResponse]] = None
     confidence: Optional[float] = None 

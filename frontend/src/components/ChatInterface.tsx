@@ -26,6 +26,7 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastSelectedLedgerId = useRef<number | undefined>(undefined);
 
   // 加载历史聊天记录
   const loadChatHistory = async () => {
@@ -82,8 +83,18 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   };
 
   useEffect(() => {
-    setMessages([]); // 清空当前消息
-    loadChatHistory();
+    // 只有当 selectedLedgerId 真正改变时才重新加载历史记录
+    if (selectedLedgerId !== lastSelectedLedgerId.current) {
+      lastSelectedLedgerId.current = selectedLedgerId;
+      if (selectedLedgerId) {
+        setMessages([]); // 清空当前消息
+        loadChatHistory();
+      } else {
+        // 如果没有选中账本，清空消息并停止加载
+        setMessages([]);
+        setIsLoadingHistory(false);
+      }
+    }
   }, [selectedLedgerId]);
 
   useEffect(() => {
@@ -142,8 +153,6 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
       }
       
       const { message, bills } = response.data.data || {};
-      console.log(bills);
-
       // 添加AI回复到本地状态
       addMessage(message || '抱歉，我没有理解您的意思。', 'assistant', bills);
     } catch (error) {

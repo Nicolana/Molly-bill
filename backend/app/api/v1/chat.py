@@ -114,7 +114,7 @@ async def chat_with_ai(
         response_data = {
             "message": ai_response.get("message", "抱歉，我无法理解您的输入。"),
             "user_id": current_user.id,
-            "bills": [{"id": bill.id} for bill in bills_created] if bills_created else None,
+            "bills": [BillResponse.model_validate(bill) for bill in bills_created] if bills_created else None,
             "confidence": ai_response.get("confidence")
         }
         
