@@ -31,10 +31,26 @@ export default function BillList({
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-col space-y-3">
+          <div className="flex items-center justify-between">
           <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
             <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
             <span>{title}</span>
           </CardTitle>
+          <div className="flex items-center space-x-4 text-sm">
+              <div className="flex items-center space-x-1">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-green-600 font-medium">
+                  收入: ¥{totalIncome.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span className="text-red-600 font-medium">
+                  支出: ¥{totalExpense.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
           
           {/* 移动端布局 */}
           <div className="flex flex-col space-y-3 sm:hidden">
@@ -65,29 +81,16 @@ export default function BillList({
           
           {/* 桌面端布局 */}
           <div className="hidden sm:flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+            {/* <div className="flex items-center space-x-2">
               <label className="text-sm text-gray-600">选择日期:</label>
-              <input
+              <input  
                 type="date"
                 value={dayjs(selectedDate).format('YYYY-MM-DD')}
                 onChange={(e) => onDateChange(new Date(e.target.value))}
                 className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-            </div>
-            <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center space-x-1">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-green-600 font-medium">
-                  收入: ¥{totalIncome.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-red-600 font-medium">
-                  支出: ¥{totalExpense.toFixed(2)}
-                </span>
-              </div>
-            </div>
+            </div> */}
+            
           </div>
         </div>
       </CardHeader>
