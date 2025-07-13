@@ -23,6 +23,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 复制应用代码
 COPY . .
 
+# 复制并设置启动脚本权限
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
 # 创建非root用户
 RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
 USER app
@@ -30,5 +34,5 @@ USER app
 # 暴露端口
 EXPOSE 8000
 
-# 启动应用
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"] 
+# 使用启动脚本
+CMD ["./entrypoint.sh"] 

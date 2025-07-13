@@ -18,7 +18,12 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 from app.db.database import Base
 from app.models import User, Ledger, UserLedger, Invitation, Bill, ChatMessage
+from app.core.config.settings import settings
+
 target_metadata = Base.metadata
+
+# 从应用配置获取数据库URL
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
