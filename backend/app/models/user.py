@@ -19,4 +19,5 @@ class User(Base):
     chat_messages = relationship("ChatMessage", back_populates="user")
     user_ledgers = relationship("UserLedger", back_populates="user")
     sent_invitations = relationship("Invitation", back_populates="inviter", foreign_keys="Invitation.inviter_id")
-    current_ledger = relationship("Ledger", foreign_keys=[current_ledger_id]) 
+    current_ledger = relationship("Ledger", foreign_keys=[current_ledger_id])
+    created_budgets = relationship("Budget", back_populates="creator") 

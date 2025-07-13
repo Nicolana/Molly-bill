@@ -47,7 +47,7 @@ app.add_middleware(
 )
 
 # 导入路由
-from app.api.v1 import auth, users, ledgers, bills, invitations, chat
+from app.api.v1 import auth, users, ledgers, bills, invitations, chat, budgets
 
 # 注册路由
 app.include_router(auth.router, prefix="/api/v1", tags=["认证"])
@@ -56,6 +56,7 @@ app.include_router(ledgers.router, prefix="/api/v1/ledgers", tags=["账本"])
 app.include_router(bills.router, prefix="/api/v1/bills", tags=["账单"])
 app.include_router(invitations.router, prefix="/api/v1/invitations", tags=["邀请"])
 app.include_router(chat.router, prefix="/api/v1/chat", tags=["聊天"])
+app.include_router(budgets.router, prefix="/api/v1/budgets", tags=["预算"])
 
 @app.get("/", tags=["健康检查"])
 def read_root():

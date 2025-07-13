@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { BarChart3, LogOut, Menu, X, BookOpen } from 'lucide-react';
+import { BarChart3, LogOut, Menu, X, BookOpen, Target } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -61,6 +61,16 @@ export default function TopNavigation() {
                 <span>账本管理</span>
               </Button>
             </Link>
+            <Link href="/dashboard/budgets">
+              <Button
+                variant={isActive('/dashboard/budgets') ? 'default' : 'ghost'}
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <Target className="h-4 w-4" />
+                <span>预算管理</span>
+              </Button>
+            </Link>
           </nav>
 
           {/* 右侧：用户操作 */}
@@ -106,6 +116,17 @@ export default function TopNavigation() {
                 >
                   <BookOpen className="h-4 w-4" />
                   <span>账本管理</span>
+                </Button>
+              </Link>
+              <Link href="/dashboard/budgets">
+                <Button
+                  variant={isActive('/dashboard/budgets') ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center space-x-2 justify-start w-full"
+                >
+                  <Target className="h-4 w-4" />
+                  <span>预算管理</span>
                 </Button>
               </Link>
             </div>

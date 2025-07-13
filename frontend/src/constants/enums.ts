@@ -30,6 +30,29 @@ export enum UserStatus {
   INACTIVE = 'inactive'
 }
 
+// 预算周期类型枚举
+export enum BudgetPeriodType {
+  MONTHLY = 'monthly',
+  QUARTERLY = 'quarterly',
+  YEARLY = 'yearly',
+  CUSTOM = 'custom'
+}
+
+// 预算状态枚举
+export enum BudgetStatus {
+  ACTIVE = 'active',
+  PAUSED = 'paused',
+  COMPLETED = 'completed',
+  EXPIRED = 'expired'
+}
+
+// 预算提醒类型枚举
+export enum AlertType {
+  WARNING = 'warning',
+  CRITICAL = 'critical',
+  EXCEEDED = 'exceeded'
+}
+
 // 角色显示信息
 export const ROLE_DISPLAY = {
   [UserRole.ADMIN]: {

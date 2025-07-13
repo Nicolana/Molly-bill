@@ -19,4 +19,5 @@ class Ledger(Base):
     user_ledgers = relationship("UserLedger", back_populates="ledger")
     bills = relationship("Bill", back_populates="ledger")
     chat_messages = relationship("ChatMessage", back_populates="ledger")
-    invitations = relationship("Invitation", back_populates="ledger") 
+    invitations = relationship("Invitation", back_populates="ledger")
+    budgets = relationship("Budget", back_populates="ledger") 

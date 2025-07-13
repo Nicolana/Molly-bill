@@ -16,4 +16,21 @@ class InvitationStatus(str, PyEnum):
 
 class LedgerStatus(str, PyEnum):
     ACTIVE = "active"        # 活跃
-    DELETED = "deleted"      # 已删除（回收站） 
+    DELETED = "deleted"      # 已删除（回收站）
+
+class BudgetPeriodType(str, PyEnum):
+    MONTHLY = "monthly"      # 月度预算
+    QUARTERLY = "quarterly"  # 季度预算
+    YEARLY = "yearly"        # 年度预算
+    CUSTOM = "custom"        # 自定义周期
+
+class BudgetStatus(str, PyEnum):
+    ACTIVE = "active"        # 活跃
+    PAUSED = "paused"        # 暂停
+    COMPLETED = "completed"  # 已完成
+    EXPIRED = "expired"      # 已过期
+
+class AlertType(str, PyEnum):
+    WARNING = "warning"      # 预警（80%）
+    CRITICAL = "critical"    # 严重（95%）
+    EXCEEDED = "exceeded"    # 超支 

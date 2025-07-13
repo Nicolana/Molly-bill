@@ -1,4 +1,4 @@
-import { UserRole, BillType, InvitationStatus, LedgerStatus } from '@/constants/enums';
+import { UserRole, BillType, InvitationStatus, LedgerStatus, BudgetPeriodType, BudgetStatus, AlertType } from '@/constants/enums';
 
 export interface User {
   id: number;
@@ -152,6 +152,97 @@ export interface InvitationCreate {
   ledger_id: number;
   invitee_email: string;
   role?: UserRole;
+}
+
+// 预算相关类型
+export interface Budget {
+  id: number;
+  name: string;
+  amount: number;
+  spent: number;
+  category?: string;
+  period_type: BudgetPeriodType;
+  start_date: string;
+  end_date: string;
+  status: BudgetStatus;
+  alert_threshold: number;
+  ledger_id: number;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  progress: number;
+  remaining: number;
+  is_exceeded: boolean;
+  is_warning: boolean;
+}
+
+export interface BudgetCreate {
+  name: string;
+  amount: number;
+  category?: string;
+  period_type: BudgetPeriodType;
+  start_date: string;
+  end_date: string;
+  alert_threshold?: number;
+  ledger_id: number;
+}
+
+export interface BudgetUpdate {
+  name?: string;
+  amount?: number;
+  category?: string;
+  period_type?: BudgetPeriodType;
+  start_date?: string;
+  end_date?: string;
+  status?: BudgetStatus;
+  alert_threshold?: number;
+}
+
+export interface BudgetStats {
+  total_budgets: number;
+  active_budgets: number;
+  total_amount: number;
+  total_spent: number;
+  total_remaining: number;
+  exceeded_count: number;
+  warning_count: number;
+}
+
+export interface BudgetProgress {
+  budget_id: number;
+  name: string;
+  amount: number;
+  spent: number;
+  progress: number;
+  remaining: number;
+  is_exceeded: boolean;
+  is_warning: boolean;
+  days_remaining: number;
+}
+
+export interface BudgetAlert {
+  id: number;
+  budget_id: number;
+  alert_type: AlertType;
+  threshold: number;
+  message?: string;
+  is_sent: boolean;
+  sent_at?: string;
+  created_at: string;
+}
+
+export interface BudgetListResponse {
+  budgets: Budget[];
+  total: number;
+  stats: BudgetStats;
+}
+
+export interface BudgetSummary {
+  monthly_budgets: Budget[];
+  yearly_budgets: Budget[];
+  custom_budgets: Budget[];
+  alerts: BudgetAlert[];
+  stats: BudgetStats;
 }
 
  
