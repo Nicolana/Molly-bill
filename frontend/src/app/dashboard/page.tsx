@@ -3,46 +3,75 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-
 import { MessageSquare, BookOpen, ChevronUp, ChevronDown } from 'lucide-react';
 import { Bill, BillCreate } from '@/types';
 import { billsAPI } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ChatInterface from '@/components/ChatInterface';
-import CalendarView from '@/components/CalendarView';
+import TimeController, { TimeControllerState } from '@/components/TimeController';
+import OverviewPanel from '@/components/OverviewPanel';
+import AnalyticsPanel from '@/components/AnalyticsPanel';
 import BillList from '@/components/BillList';
-import IncomeExpenseChart from '@/components/IncomeExpenseChart';
 import { useLedgerStore } from '@/store/ledger';
 import Link from 'next/link';
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 
 export default function DashboardPage() {
   const [bills, setBills] = useState<Bill[]>([]);
+  const [previousBills, setPreviousBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('30d');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'month' | 'year'>('month'); // 新增时间筛选
-  const [isChatExpanded, setIsChatExpanded] = useState(true); // 移动端聊天展开状态
+  const [isChatExpanded, setIsChatExpanded] = useState(true);
+  
+  // 时间控制器状态
+  const [timeState, setTimeState] = useState<TimeControllerState>({
+    mode: 'quick',
+    quickMode: 'month',
+    range: {
+      start: dayjs().startOf('month').toDate(),
+      end: dayjs().endOf('month').toDate()
+    },
+    selectedDate: new Date()
+  });
   
   // 使用全局账本状态
   const { currentLedgerId, userLedgers, fetchUserLedgers, getCurrentLedger } = useLedgerStore();
 
   // 获取账单列表
-  const fetchBills = async () => {
-    if (!currentLedgerId) return; // 如果没有选中账本，不获取账单
+  const fetchBills = async (startDate: Date, endDate: Date) => {
+    if (!currentLedgerId) return;
     
     try {
       setLoading(true);
-      const response = await billsAPI.getBills(timeFilter, currentLedgerId); // 只传递时间筛选和账本ID
-      console.log("bills", response)
+      const response = await billsAPI.getBills('all', currentLedgerId);
       
       if (response.data.success && response.data.data) {
-        const billsData = response.data.data;
-        console.log("获取到的bill 列表", billsData)
-        setBills(billsData || []);
+        const allBills = response.data.data;
+        
+        // 筛选当前时间范围的账单
+        const filteredBills = allBills.filter(bill => {
+          const billDate = dayjs(bill.date);
+          return billDate.isSame(startDate, 'day') || 
+                 billDate.isSame(endDate, 'day') ||
+                 (billDate.isAfter(startDate) && billDate.isBefore(endDate));
+        });
+        
+        setBills(filteredBills);
+        
+        // 获取上一个周期的数据用于环比
+        const periodDiff = dayjs(endDate).diff(dayjs(startDate), 'day') + 1;
+        const prevStartDate = dayjs(startDate).subtract(periodDiff, 'day');
+        const prevEndDate = dayjs(startDate).subtract(1, 'day');
+        
+        const prevBills = allBills.filter(bill => {
+          const billDate = dayjs(bill.date);
+          return billDate.isSame(prevStartDate, 'day') || 
+                 billDate.isSame(prevEndDate, 'day') ||
+                 (billDate.isAfter(prevStartDate) && billDate.isBefore(prevEndDate));
+        });
+        
+        setPreviousBills(prevBills);
       } else {
         setError(response.data.message || '获取账单失败');
       }
@@ -58,7 +87,7 @@ export default function DashboardPage() {
   const deleteBill = async (id: number) => {
     try {
       await billsAPI.deleteBill(id);
-      fetchBills(); // 重新获取数据
+      fetchBills(timeState.range.start, timeState.range.end);
     } catch (err) {
       console.error('删除账单失败:', err);
       alert('删除账单失败');
@@ -67,13 +96,21 @@ export default function DashboardPage() {
 
   // 处理新账单创建
   const handleBillsCreated = async (newBills: BillCreate[]) => {
-    // 重新获取账单数据以更新图表和列表
-    await fetchBills();
+    await fetchBills(timeState.range.start, timeState.range.end);
+  };
+
+  // 处理时间状态变化
+  const handleTimeStateChange = (newTimeState: TimeControllerState) => {
+    setTimeState(newTimeState);
+    fetchBills(newTimeState.range.start, newTimeState.range.end);
   };
 
   // 处理日期选择
   const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
+    setTimeState(prev => ({
+      ...prev,
+      selectedDate: date
+    }));
   };
 
   // 初始化数据
@@ -86,125 +123,26 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    fetchBills();
-  }, [timeFilter, currentLedgerId]); // 当时间筛选或账本改变时重新获取数据
-
-  // 计算统计数据
-  const totalAmount = bills.reduce((sum, bill) => {
-    return bill.type === 'income' ? sum + bill.amount : sum - bill.amount;
-  }, 0);
-  const totalCount = bills.length;
-  const averageAmount = totalCount > 0 ? Math.abs(totalAmount) / totalCount : 0;
-
-  // 按分类统计
-  const categoryStats = bills.reduce((stats, bill) => {
-    const category = bill.category || '未分类';
-    const type = bill.type === 'income' ? '收入' : '支出';
-    const key = `${type}-${category}`;
-    stats[key] = (stats[key] || 0) + bill.amount;
-    return stats;
-  }, {} as Record<string, number>);
-
-  // 生成日期范围数据
-  const generateDateRangeData = () => {
-    const now = dayjs();
-    let days = 30; // 默认30天
-    let startDate = now.subtract(29, 'day'); // 默认显示最近30天
-    
-    // 根据时间筛选调整显示范围
-    switch (timeFilter) {
-      case 'today':
-        days = 24; // 显示24小时
-        startDate = now.startOf('day');
-        break;
-      case 'month':
-        days = now.daysInMonth();
-        startDate = now.startOf('month');
-        break;
-      case 'year':
-        days = 12; // 显示12个月
-        startDate = now.startOf('year');
-        break;
-      default:
-        // 'all' 使用原来的dateRange逻辑
-        days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
-        startDate = now.subtract(days - 1, 'day');
+    if (currentLedgerId) {
+      fetchBills(timeState.range.start, timeState.range.end);
     }
-    
-    const data = [];
-    
-    if (timeFilter === 'year') {
-      // 年度视图：显示12个月的数据
-      for (let i = 0; i < 12; i++) {
-        const monthDate = now.startOf('year').add(i, 'month');
-        const monthStart = monthDate.startOf('month');
-        const monthEnd = monthDate.endOf('month');
-        
-        const monthBills = bills.filter(bill => {
-          const billDate = dayjs(bill.date);
-          return billDate.isSame(monthStart, 'month') && billDate.isSame(monthStart, 'year');
-        });
-        
-        const monthIncome = monthBills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0);
-        const monthExpense = monthBills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0);
-        
-        data.push({
-          date: monthDate.format('MM月'),
-          income: monthIncome,
-          expense: monthExpense,
-          count: monthBills.length
-        });
-      }
-    } else {
-      // 日视图：显示具体天数
-      for (let i = 0; i < days; i++) {
-        const date = startDate.add(i, timeFilter === 'today' ? 'hour' : 'day');
-        const dayStart = date.startOf(timeFilter === 'today' ? 'hour' : 'day');
-        const dayEnd = date.endOf(timeFilter === 'today' ? 'hour' : 'day');
-        
-        const dayBills = bills.filter(bill => {
-          const billDate = dayjs(bill.date);
-          return billDate.isSame(dayStart, timeFilter === 'today' ? 'hour' : 'day') || 
-                 (billDate.isAfter(dayStart) && billDate.isBefore(dayEnd));
-        });
-        
-        const dayIncome = dayBills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0);
-        const dayExpense = dayBills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0);
-        
-        data.push({
-          date: date.format(timeFilter === 'today' ? 'HH:mm' : 'MM/DD'),
-          income: dayIncome,
-          expense: dayExpense,
-          count: dayBills.length
-        });
-      }
-    }
-    
-    return data;
+  }, [currentLedgerId]);
+
+  // 操作处理函数
+  const handleAddBill = () => {
+    // 这里可以打开添加账单的对话框或导航到添加页面
+    console.log('添加账单');
   };
 
-  // 生成饼图数据
-  const generatePieData = () => {
-    return Object.entries(categoryStats).map(([name, value]) => ({
-      name,
-      value
-    }));
+  const handleExportData = () => {
+    // 导出数据功能
+    console.log('导出数据');
   };
 
-  // 获取选中日期的账单
-  // const getSelectedDateBills = () => {
-  //   const dayStart = dayjs(selectedDate).startOf('day');
-  //   const dayEnd = dayjs(selectedDate).endOf('day');
-    
-  //   return bills.filter(bill => {
-  //     const billDate = dayjs(bill.date);
-  //     return billDate.isSame(dayStart, 'day') || (billDate.isAfter(dayStart) && billDate.isBefore(dayEnd));
-  //   });
-  // };
-
-  // const selectedDateBills = getSelectedDateBills();
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
+  const handleSetBudget = () => {
+    // 设置预算功能
+    console.log('设置预算');
+  };
 
   if (loading && bills.length === 0) {
     return (
@@ -252,349 +190,116 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* 右侧账单和图表区域 */}
+          {/* 右侧统计和分析区域 */}
           <div className="w-1/2 overflow-auto">
             <div className="p-6 space-y-6">
-              {/* 时间筛选 */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-800">
-                  {timeFilter === 'today' && '今日统计'}
-                  {timeFilter === 'month' && '本月统计'}
-                  {timeFilter === 'year' && '本年统计'}
-                  {timeFilter === 'all' && '全部统计'}
-                </h2>
-                <div className="flex space-x-2">
-                  <Button
-                    variant={timeFilter === 'today' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setTimeFilter('today')}
-                  >
-                    今日
-                  </Button>
-                  <Button
-                    variant={timeFilter === 'month' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setTimeFilter('month')}
-                  >
-                    本月
-                  </Button>
-                  <Button
-                    variant={timeFilter === 'year' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setTimeFilter('year')}
-                  >
-                    本年
-                  </Button>
-                  <Button
-                    variant={timeFilter === 'all' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setTimeFilter('all')}
-                  >
-                    全部
-                  </Button>
-                </div>
-              </div>
+              {/* 时间控制器 */}
+              <TimeController 
+                value={timeState}
+                onChange={handleTimeStateChange}
+              />
 
-              {/* 统计卡片 */}
-              <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-400/20 via-green-300/15 to-teal-200/20 backdrop-blur-md border-0">
-                {/* 背景插图 */}
-                <div className="absolute inset-0 opacity-10">
-                  <img 
-                    src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" 
-                    alt="Finance background"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                
-                <CardContent className="px-6 py-0 relative z-10">
-                  <div className="flex items-center justify-between">
-                    {/* 主要区域 - 支出 */}
-                    <div className="flex-1">
-                      <div className="mb-2">
-                        <h3 className="text-sm font-medium text-gray-700 mb-1">总支出</h3>
-                        <div className="text-3xl font-bold text-gray-800">
-                          ¥{bills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-1 text-xs text-gray-600">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" />
-                        </svg>
-                        <span>本月支出</span>
-                      </div>
-                    </div>
-                    
-                    {/* 次要区域 - 右侧信息 */}
-                    <div className="flex flex-col space-y-4 ml-8">
-                      {/* 收入 */}
-                      <div className="text-right">
-                        <div className="text-xs text-gray-600 mb-1">总收入</div>
-                        <div className="text-lg font-semibold text-green-600">
-                          ¥{bills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
-                        </div>
-                      </div>
-                      
-                      {/* 账单数量 */}
-                      <div className="text-right">
-                        <div className="text-xs text-gray-600 mb-1">账单数量</div>
-                        <div className="text-lg font-semibold text-emerald-600">
-                          {totalCount}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* 支出热力图 */}
-              <CalendarView 
+              {/* 总览统计面板 */}
+              <OverviewPanel 
                 bills={bills}
-                selectedDate={selectedDate}
+                previousBills={previousBills}
+                timeRange={timeState.range}
+                onAddBill={handleAddBill}
+                onExportData={handleExportData}
+                onSetBudget={handleSetBudget}
+              />
+
+              {/* 分析面板 */}
+              <AnalyticsPanel 
+                bills={bills}
+                timeRange={timeState.range}
+                quickMode={timeState.quickMode}
                 onDateSelect={handleDateSelect}
               />
 
               {/* 账单列表 */}
               <BillList 
-                bills={bills}
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
+                bills={bills.filter(bill => dayjs(bill.date).isSame(timeState.selectedDate, 'day'))}
+                selectedDate={timeState.selectedDate}
+                onDateChange={handleDateSelect}
                 onDeleteBill={deleteBill}
+                title="选定日期账单"
               />
-
-              {/* 收支趋势柱状图 */}
-              <IncomeExpenseChart 
-                data={generateDateRangeData()}
-                timeFilter={timeFilter}
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-              />
-
-              {/* 分类统计饼图 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    {timeFilter === 'today' && '今日分类统计'}
-                    {timeFilter === 'month' && '本月分类统计'}
-                    {timeFilter === 'year' && '本年分类统计'}
-                    {timeFilter === 'all' && '分类统计'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={generatePieData()}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {generatePieData().map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => [`¥${value}`, '金额']} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
-              
             </div>
           </div>
         </div>
 
         {/* 移动端布局 */}
         <div className="lg:hidden">
-          {/* 移动端主要内容区域 */}
           <div className="pb-40 space-y-4">
-            {/* 时间筛选 - 移动端 */}
-            <div className="flex flex-col space-y-3 p-4">
-              <h2 className="text-lg font-semibold text-gray-800">
-                {timeFilter === 'today' && '今日统计'}
-                {timeFilter === 'month' && '本月统计'}
-                {timeFilter === 'year' && '本年统计'}
-                {timeFilter === 'all' && '全部统计'}
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={timeFilter === 'today' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTimeFilter('today')}
-                >
-                  今日
-                </Button>
-                <Button
-                  variant={timeFilter === 'month' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTimeFilter('month')}
-                >
-                  本月
-                </Button>
-                <Button
-                  variant={timeFilter === 'year' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTimeFilter('year')}
-                >
-                  本年
-                </Button>
-                <Button
-                  variant={timeFilter === 'all' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTimeFilter('all')}
-                >
-                  全部
-                </Button>
-              </div>
+            {/* 时间控制器 - 移动端 */}
+            <div className="p-4">
+              <TimeController 
+                value={timeState}
+                onChange={handleTimeStateChange}
+              />
             </div>
 
-            <div className="px-4 space-y-4">
-              {/* 统计卡片 - 移动端优化 */}
-              <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-400/20 via-green-300/15 to-teal-200/20 backdrop-blur-md border-0">
-                <div className="absolute inset-0 opacity-10">
-                  <img 
-                    src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" 
-                    alt="Finance background"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                
-                <CardContent className="p-4 relative z-10">
-                  <div className="space-y-4">
-                    {/* 主要区域 - 支出 */}
-                    <div className="text-center">
-                      <h3 className="text-sm font-medium text-gray-700 mb-2">总支出</h3>
-                      <div className="text-2xl sm:text-3xl font-bold text-gray-800">
-                        ¥{bills.filter(bill => bill.type === 'expense').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
-                      </div>
-                      <div className="flex items-center justify-center space-x-1 text-xs text-gray-600 mt-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" />
-                        </svg>
-                        <span>本月支出</span>
-                      </div>
-                    </div>
-                    
-                    {/* 次要信息 - 横向布局 */}
-                    <div className="flex justify-around border-t pt-4">
-                      <div className="text-center">
-                        <div className="text-xs text-gray-600 mb-1">总收入</div>
-                        <div className="text-lg font-semibold text-green-600">
-                          ¥{bills.filter(bill => bill.type === 'income').reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs text-gray-600 mb-1">账单数量</div>
-                        <div className="text-lg font-semibold text-emerald-600">
-                          {totalCount}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-               {/* 支出热力图 - 移动端 */}
-               <CalendarView 
+            {/* 总览统计面板 - 移动端 */}
+            <div className="px-4">
+              <OverviewPanel 
                 bills={bills}
-                selectedDate={selectedDate}
+                previousBills={previousBills}
+                timeRange={timeState.range}
+                onAddBill={handleAddBill}
+                onExportData={handleExportData}
+                onSetBudget={handleSetBudget}
+              />
+            </div>
+
+            {/* 分析面板 - 移动端 */}
+            <div className="px-4">
+              <AnalyticsPanel 
+                bills={bills}
+                timeRange={timeState.range}
+                quickMode={timeState.quickMode}
                 onDateSelect={handleDateSelect}
               />
+            </div>
 
-              {/* 账单列表 - 移动端 */}
+            {/* 账单列表 - 移动端 */}
+            <div className="px-4">
               <BillList 
-                bills={bills}
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
+                bills={bills.filter(bill => dayjs(bill.date).isSame(timeState.selectedDate, 'day'))}
+                selectedDate={timeState.selectedDate}
+                onDateChange={handleDateSelect}
                 onDeleteBill={deleteBill}
+                title="选定日期账单"
               />
-
-              {/* 收支趋势柱状图 - 移动端优化 */}
-              <IncomeExpenseChart 
-                data={generateDateRangeData()}
-                timeFilter={timeFilter}
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-              />
-
-              {/* 分类统计饼图 - 移动端优化 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    {timeFilter === 'today' && '今日分类统计'}
-                    {timeFilter === 'month' && '本月分类统计'}
-                    {timeFilter === 'year' && '本年分类统计'}
-                    {timeFilter === 'all' && '分类统计'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-48 sm:h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={generatePieData()}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                          outerRadius={60}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {generatePieData().map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => [`¥${value}`, '金额']} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
-             
             </div>
           </div>
 
           {/* 移动端固定底部聊天区域 */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
-            <div className="flex items-center justify-between px-4 py-2 border-b">
-              <div className="flex items-center space-x-2">
-                <MessageSquare className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium">AI记账助手</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Link href="/dashboard/ledgers">
-                  <Button variant="outline" size="sm" className="text-xs">
-                    <BookOpen className="h-3 w-3 mr-1" />
-                    {currentLedgerId ? 
-                      userLedgers.find(ul => ul.ledger?.id === currentLedgerId)?.ledger?.name || '选择账本' : 
-                      '选择账本'
-                    }
-                  </Button>
-                </Link>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsChatExpanded(!isChatExpanded)}
-                >
-                  {isChatExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                </Button>
-              </div>
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+            <div className="p-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsChatExpanded(!isChatExpanded)}
+                className="w-full flex items-center justify-between"
+              >
+                <div className="flex items-center space-x-2">
+                  <MessageSquare className="h-4 w-4" />
+                  <span>AI记账助手</span>
+                </div>
+                {isChatExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+              </Button>
             </div>
             
-            {/* 聊天区域 */}
-            <div className={`transition-all duration-300 overflow-hidden ${isChatExpanded ? 'h-64' : 'h-0'}`}>
-              <ChatInterface 
-                onBillsCreated={handleBillsCreated} 
-                selectedLedgerId={currentLedgerId || undefined}
-              />
-            </div>
+            {isChatExpanded && (
+              <div className="border-t border-gray-200">
+                <div className="h-80 overflow-hidden">
+                  <ChatInterface 
+                    onBillsCreated={handleBillsCreated} 
+                    selectedLedgerId={currentLedgerId || undefined}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
