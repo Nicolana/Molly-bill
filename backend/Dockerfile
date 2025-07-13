@@ -23,20 +23,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 复制应用代码
 COPY . .
 
-# 复制并设置启动脚本权限
+# 复制启动脚本
 COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
 
 # 创建非root用户并设置文件所有权
 RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
-
-# 确保启动脚本有执行权限
-RUN chmod +x /app/entrypoint.sh
 
 USER app
 
 # 暴露端口
 EXPOSE 8000
 
-# 使用启动脚本
-CMD ["./entrypoint.sh"] 
+# 使用 bash 执行启动脚本
+CMD ["bash", "entrypoint.sh"] 
