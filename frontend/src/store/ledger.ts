@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { UserLedger } from '@/types';
+import { Ledger, UserLedger } from '@/types';
 import { ledgersAPI } from '@/lib/api';
 
 interface LedgerState {
   userLedgers: UserLedger[];
   currentLedgerId: number | null;
+  currentLedger: Ledger | null;
   isLoading: boolean;
   
   // Actions
@@ -20,6 +21,7 @@ export const useLedgerStore = create<LedgerState>()(
     (set, get) => ({
       userLedgers: [],
       currentLedgerId: null,
+      currentLedger: null,
       isLoading: false,
 
       // 获取用户账本列表

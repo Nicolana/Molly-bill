@@ -11,6 +11,7 @@ import CreateBudgetDialog from '@/components/CreateBudgetDialog';
 import { Plus, TrendingUp, AlertTriangle, DollarSign, Target } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useLedgerStore } from '@/store/ledger';
+import { budgetsAPI } from '@/lib/api';
 
 export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -28,6 +29,7 @@ export default function BudgetsPage() {
   const [activeTab, setActiveTab] = useState('all');
   
   const { userLedgers, currentLedgerId } = useLedgerStore();
+  console.log(userLedgers, currentLedgerId);
   const currentLedger = userLedgers.find(ul => ul.ledger?.id === currentLedgerId)?.ledger;
 
   useEffect(() => {
@@ -41,20 +43,12 @@ export default function BudgetsPage() {
     
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/v1/budgets?ledger_id=${currentLedger.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          const data: BudgetListResponse = result.data;
-          setBudgets(data.budgets);
-          setStats(data.stats);
-        }
+      const response = await budgetsAPI.getBudgets(currentLedger.id);
+      
+      if (response.data.success) {
+        const data: BudgetListResponse = response.data.data;
+        setBudgets(data.budgets);
+        setStats(data.stats);
       }
     } catch (error) {
       console.error('获取预算列表失败:', error);
@@ -65,21 +59,10 @@ export default function BudgetsPage() {
 
   const handleCreateBudget = async (budgetData: BudgetCreate) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/budgets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(budgetData),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          fetchBudgets(); // 重新获取预算列表
-        }
+      const response = await budgetsAPI.createBudget(budgetData);
+      
+      if (response.data.success) {
+        fetchBudgets(); // 重新获取预算列表
       }
     } catch (error) {
       console.error('创建预算失败:', error);
@@ -90,15 +73,9 @@ export default function BudgetsPage() {
     if (!confirm('确定要删除这个预算吗？')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/v1/budgets/${budgetId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
+      const response = await budgetsAPI.deleteBudget(budgetId);
+      
+      if (response.data.success) {
         fetchBudgets(); // 重新获取预算列表
       }
     } catch (error) {

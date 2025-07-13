@@ -159,4 +159,46 @@ export const invitationsAPI = {
   cancelInvitation: (invitationId: number) => api.delete<BaseResponse>(`/invitations/${invitationId}`),
 };
 
+// 预算相关API
+export const budgetsAPI = {
+  // 获取预算列表
+  getBudgets: (ledgerId: number, status?: string, skip?: number, limit?: number) => 
+    api.get<BaseResponse<any>>('/budgets/', {
+      params: { ledger_id: ledgerId, status, skip, limit }
+    }),
+  
+  // 创建预算
+  createBudget: (data: any) => api.post<BaseResponse<any>>('/budgets/', data),
+  
+  // 获取预算详情
+  getBudget: (budgetId: number) => api.get<BaseResponse<any>>(`/budgets/${budgetId}`),
+  
+  // 更新预算
+  updateBudget: (budgetId: number, data: any) => api.put<BaseResponse<any>>(`/budgets/${budgetId}`, data),
+  
+  // 删除预算
+  deleteBudget: (budgetId: number) => api.delete<BaseResponse>(`/budgets/${budgetId}`),
+  
+  // 获取预算进度
+  getBudgetProgress: (budgetId: number) => api.get<BaseResponse<any>>(`/budgets/${budgetId}/progress`),
+  
+  // 重新计算预算
+  recalculateBudget: (budgetId: number) => api.get<BaseResponse<any>>(`/budgets/${budgetId}/recalculate`),
+  
+  // 获取账本预算统计
+  getBudgetStats: (ledgerId: number) => api.get<BaseResponse<any>>(`/budgets/ledger/${ledgerId}/stats`),
+  
+  // 获取预算提醒
+  getBudgetAlerts: (ledgerId: number, unreadOnly?: boolean) => 
+    api.get<BaseResponse<any>>(`/budgets/ledger/${ledgerId}/alerts`, {
+      params: { unread_only: unreadOnly }
+    }),
+  
+  // 标记提醒为已发送
+  markAlertSent: (alertId: number) => api.post<BaseResponse>(`/budgets/alerts/${alertId}/mark-sent`),
+  
+  // 获取预算总览
+  getBudgetSummary: (ledgerId: number) => api.get<BaseResponse<any>>(`/budgets/ledger/${ledgerId}/summary`),
+};
+
 export default api; 
