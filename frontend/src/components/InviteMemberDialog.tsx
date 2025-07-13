@@ -1,12 +1,40 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from '@/components/ui/form';
+import { Badge } from '@/components/ui/badge';
+
 import { InvitationCreate } from '@/types';
 import { UserRole } from '@/constants/enums';
-import { UserPlus, Mail, Shield, User } from 'lucide-react';
+import { UserPlus, Mail, Shield, User, Clock, AlertCircle } from 'lucide-react';
 
 interface InviteMemberDialogProps {
   open: boolean;
@@ -15,166 +43,222 @@ interface InviteMemberDialogProps {
   ledgerId?: number;
 }
 
+const formSchema = z.object({
+  invitee_email: z
+    .string()
+    .min(1, '邮箱地址不能为空')
+    .email('请输入有效的邮箱地址'),
+  role: z.nativeEnum(UserRole, {
+    errorMap: () => ({ message: '请选择用户角色' }),
+  }),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
 export default function InviteMemberDialog({ open, onClose, onSubmit, ledgerId }: InviteMemberDialogProps) {
-  const [formData, setFormData] = useState<InvitationCreate>({
-    ledger_id: 0,
-    invitee_email: '',
-    role: UserRole.MEMBER
-  });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
-  console.log('InviteMemberDialog props:', { open, ledgerId });
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      invitee_email: '',
+      role: UserRole.MEMBER,
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.invitee_email.trim()) {
-      setError('邮箱地址不能为空');
-      return;
-    }
+  const selectedRole = form.watch('role');
 
+  const handleSubmit = async (data: FormData) => {
     if (!ledgerId) {
-      setError('账本ID无效');
-      return;
-    }
-
-    // 简单的邮箱格式验证
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.invitee_email)) {
-      setError('请输入有效的邮箱地址');
+      form.setError('root', { message: '账本ID无效' });
       return;
     }
 
     try {
       setLoading(true);
-      setError('');
       
       const invitationData: InvitationCreate = {
-        ...formData,
-        ledger_id: ledgerId
+        ...data,
+        ledger_id: ledgerId,
       };
       
       await onSubmit(invitationData);
-      
-      // 重置表单
-      setFormData({
-        ledger_id: 0,
-        invitee_email: '',
-        role: UserRole.MEMBER
-      });
-    } catch (err: any) {
-      console.error('发送邀请失败:', err);
-      // 提取后端返回的详细错误信息
-      const errorMessage = err.response?.data?.detail || err.message || '发送邀请失败';
-      setError(errorMessage);
+      form.reset();
+      onClose();
+    } catch (error: any) {
+      console.error('发送邀请失败:', error);
+      const errorMessage = error.response?.data?.detail || error.message || '发送邀请失败';
+      form.setError('root', { message: errorMessage });
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setFormData({
-      ledger_id: 0,
-      invitee_email: '',
-      role: UserRole.MEMBER
-    });
-    setError('');
+    form.reset();
     onClose();
   };
 
-  if (!open || !ledgerId) return null;
+  const getRoleInfo = (role: UserRole) => {
+    if (role === UserRole.ADMIN) {
+      return {
+        icon: Shield,
+        title: '管理员权限',
+        description: '可以编辑账本信息、邀请/移除成员、管理账单记录',
+        color: 'text-orange-500',
+        bgColor: 'bg-orange-50',
+        borderColor: 'border-orange-200',
+      };
+    }
+    return {
+      icon: User,
+      title: '成员权限',
+      description: '可以查看账本信息、记录和编辑自己的账单',
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
+    };
+  };
+
+  const roleInfo = getRoleInfo(selectedRole);
+  const RoleIcon = roleInfo.icon;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <div className="flex items-center space-x-2 mb-4">
-          <UserPlus className="h-5 w-5 text-blue-600" />
-          <h2 className="text-lg font-semibold">邀请协作成员</h2>
-        </div>
+    <Dialog open={open && !!ledgerId} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-blue-600" />
+            邀请协作成员
+          </DialogTitle>
+        </DialogHeader>
         
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded p-3 mb-4">
-            <p className="text-red-700 text-sm">{error}</p>
-          </div>
-        )}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {form.formState.errors.root && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <p className="text-red-700 text-sm">{form.formState.errors.root.message}</p>
+                </div>
+              </div>
+            )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="email" className="flex items-center space-x-2">
-              <Mail className="h-4 w-4" />
-              <span>邀请邮箱 *</span>
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.invitee_email}
-              onChange={(e) => setFormData({ ...formData, invitee_email: e.target.value })}
-              placeholder="输入要邀请的用户邮箱"
-              required
+            <FormField
+              control={form.control}
+              name="invitee_email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    邀请邮箱
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="输入要邀请的用户邮箱"
+                      type="email"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    邀请链接将发送到此邮箱地址
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <p className="text-sm text-gray-500 mt-1">
-              邀请链接将发送到此邮箱地址
-            </p>
-          </div>
 
-          <div>
-            <Label htmlFor="role" className="flex items-center space-x-2">
-              <Shield className="h-4 w-4" />
-              <span>分配角色</span>
-            </Label>
-            <select
-              id="role"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-            >
-              <option value={UserRole.MEMBER}>
-                成员 - 可以查看和记录账单
-              </option>
-              <option value={UserRole.ADMIN}>
-                管理员 - 可以管理账本和邀请其他成员
-              </option>
-            </select>
-            
-            <div className="mt-2 p-3 bg-blue-50 rounded-lg">
-              <div className="flex items-start space-x-2">
-                {formData.role === UserRole.ADMIN ? (
-                  <Shield className="h-4 w-4 text-orange-500 mt-0.5" />
-                ) : (
-                  <User className="h-4 w-4 text-blue-500 mt-0.5" />
-                )}
-                <div className="text-sm">
-                  <p className="font-medium text-gray-900">
-                    {formData.role === UserRole.ADMIN ? '管理员权限' : '成员权限'}
-                  </p>
-                  <p className="text-gray-600">
-                    {formData.role === UserRole.ADMIN 
-                      ? '可以编辑账本信息、邀请/移除成员、管理账单记录' 
-                      : '可以查看账本信息、记录和编辑自己的账单'
-                    }
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    分配角色
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="h-auto min-h-[3.5rem] py-2">
+                        <SelectValue placeholder="选择用户角色" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={UserRole.MEMBER} className="h-auto py-3 min-h-[3.5rem]">
+                        <div className="flex items-center gap-2 w-full">
+                          <User className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                          <div className="flex-1">
+                            <div className="font-medium">成员</div>
+                            <div className="text-sm text-gray-500 leading-tight">可以查看和记录账单</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value={UserRole.ADMIN} className="h-auto py-3 min-h-[3.5rem]">
+                        <div className="flex items-center gap-2 w-full">
+                          <Shield className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                          <div className="flex-1">
+                            <div className="font-medium">管理员</div>
+                            <div className="text-sm text-gray-500 leading-tight">可以管理账本和邀请其他成员</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 角色权限说明 */}
+            <div className={`p-4 rounded-lg border ${roleInfo.bgColor} ${roleInfo.borderColor}`}>
+              <div className="flex items-start gap-3">
+                <RoleIcon className={`h-5 w-5 ${roleInfo.color} mt-0.5`} />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-medium text-gray-900">{roleInfo.title}</h4>
+                    <Badge variant="secondary" className="text-xs">
+                      {selectedRole === UserRole.ADMIN ? '管理员' : '成员'}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">{roleInfo.description}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 邀请提醒 */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Clock className="h-5 w-5 text-amber-500 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-amber-900 mb-1">邀请说明</h4>
+                  <p className="text-sm text-amber-800">
+                    邀请链接将在 <strong>24小时</strong> 后过期，被邀请用户需要在此期间接受邀请。
                   </p>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
-            <p className="text-yellow-800 text-sm">
-              <strong>注意：</strong> 邀请链接将在24小时后过期，被邀请用户需要在此期间接受邀请。
-            </p>
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={handleClose}>
-              取消
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? '发送中...' : '发送邀请'}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleClose}>
+                取消
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    发送中...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="h-4 w-4 mr-2" />
+                    发送邀请
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 } 
