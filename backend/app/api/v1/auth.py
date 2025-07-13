@@ -10,6 +10,7 @@ from app.core.security.auth import create_access_token, get_current_user
 from app.crud.user import get_user_by_email, create_user
 from app.core.security.password import verify_password
 from app.utils.response import success_response, error_response
+from app.crud.ledger import get_user_ledgers, get_user_current_ledger
 
 router = APIRouter()
 
@@ -90,7 +91,7 @@ def get_current_user_info(current_user: User = Depends(get_current_user), db: Se
             "id": user_ledger.id,
             "user_id": user_ledger.user_id,
             "ledger_id": user_ledger.ledger_id,
-            "role": user_ledger.role,
+            "role": user_ledger.role.value if user_ledger.role else None,
             "joined_at": user_ledger.joined_at,
             "status": user_ledger.status,
             "ledger": {
@@ -99,7 +100,7 @@ def get_current_user_info(current_user: User = Depends(get_current_user), db: Se
                 "description": user_ledger.ledger.description,
                 "currency": user_ledger.ledger.currency,
                 "timezone": user_ledger.ledger.timezone,
-                "status": user_ledger.ledger.status,
+                "status": user_ledger.ledger.status.value if user_ledger.ledger.status else None,
                 "created_at": user_ledger.ledger.created_at,
                 "deleted_at": user_ledger.ledger.deleted_at
             }

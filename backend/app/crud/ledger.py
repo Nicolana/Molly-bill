@@ -31,6 +31,15 @@ def create_personal_ledger(db: Session, user_id: int, username: str):
     )
     return create_ledger(db, ledger, user_id)
 
+def get_user_current_ledger(db: Session, user_id: int):
+    """获取用户当前账本"""
+    return db.query(UserLedger).options(
+        joinedload(UserLedger.ledger)
+    ).filter(
+        UserLedger.user_id == user_id,
+        UserLedger.status == "active"
+    ).first()
+
 def get_user_ledgers(db: Session, user_id: int):
     """获取用户的所有账本"""
     return db.query(UserLedger).options(
