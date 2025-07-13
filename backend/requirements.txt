@@ -8,6 +8,7 @@ passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
 email-validator==2.1.0
 python-dotenv==1.0.0
+psycopg2-binary==2.9.9
 
 # 数据库迁移
 alembic==1.13.1
