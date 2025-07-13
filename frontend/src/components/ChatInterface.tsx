@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChatMessage, BillCreate, Bill } from '@/types';
 import { aiAPI, billsAPI } from '@/lib/api';
-import { Mic, MicOff, Camera, Send, Loader2, Trash2 } from 'lucide-react';
+import { Mic, MicOff, Camera, Send, Loader2, Trash2, ChevronUp } from 'lucide-react';
 import BillCard from './BillCard';
 
 interface ChatInterfaceProps {
@@ -20,25 +20,42 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastSelectedLedgerId = useRef<number | undefined>(undefined);
+  const isInitialLoad = useRef(true);
+
+  const PAGE_SIZE = 20; // 每页加载的消息数量
 
   // 加载历史聊天记录
-  const loadChatHistory = async () => {
-    if (!selectedLedgerId) return; // 如果没有选中账本，不加载历史
+  const loadChatHistory = useCallback(async (page: number = 0, append: boolean = false) => {
+    if (!selectedLedgerId) return;
     
     try {
-      setIsLoadingHistory(true);
-      const response = await aiAPI.getChatHistory(selectedLedgerId, 0, 100);
+      if (!append) {
+        setIsLoadingHistory(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      const skip = page * PAGE_SIZE;
+      const response = await aiAPI.getChatHistory(selectedLedgerId, skip, PAGE_SIZE);
       
-      // 检查统一返回格式
       if (!response.data?.success) {
         throw new Error(response.data?.message || '加载聊天历史失败');
       }
       
       const dbMessages = response.data.data || [];
+      
+      // 检查是否还有更多消息
+      setHasMoreMessages(dbMessages.length === PAGE_SIZE);
       
       // 转换数据库消息格式为前端格式
       const convertedMessages: ChatMessage[] = dbMessages.map((dbMsg: any) => ({
@@ -46,66 +63,123 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
         type: dbMsg.message_type as 'user' | 'assistant',
         content: dbMsg.content,
         timestamp: new Date(dbMsg.timestamp),
-        bills: dbMsg.bills || [] // 使用后端返回的完整账单信息
+        bills: dbMsg.bills || []
       }));
 
-      console.log(convertedMessages);
-      
-      setMessages(convertedMessages);
-      // 使用 requestAnimationFrame 确保在DOM更新后设置滚动位置
-      requestAnimationFrame(() => {
-        initializeScrollPosition();
-      });
+      if (append) {
+        // 追加到现有消息的开头（因为是历史消息）
+        setMessages(prev => [...convertedMessages.reverse(), ...prev]);
+      } else {
+        // 替换所有消息
+        setMessages(convertedMessages.reverse());
+        isInitialLoad.current = false;
+        // 初始加载完成后滚动到底部
+        requestAnimationFrame(() => {
+          initializeScrollPosition();
+        });
+      }
     } catch (error) {
       console.error('加载聊天历史失败:', error);
     } finally {
       setIsLoadingHistory(false);
+      setIsLoadingMore(false);
     }
-  };
+  }, [selectedLedgerId]);
+
+  // 加载更多历史消息
+  const loadMoreMessages = useCallback(async () => {
+    if (!hasMoreMessages || isLoadingMore || !selectedLedgerId) return;
+
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    await loadChatHistory(nextPage, true);
+  }, [currentPage, hasMoreMessages, isLoadingMore, selectedLedgerId, loadChatHistory]);
+
+  // 处理滚动事件
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    
+    // 检查是否滚动到顶部，触发加载更多
+    if (scrollTop <= 100 && hasMoreMessages && !isLoadingMore) {
+      const previousScrollHeight = scrollHeight;
+      loadMoreMessages().then(() => {
+        // 保持滚动位置
+        requestAnimationFrame(() => {
+          const newScrollHeight = container.scrollHeight;
+          const scrollDiff = newScrollHeight - previousScrollHeight;
+          container.scrollTop = scrollTop + scrollDiff;
+        });
+      });
+    }
+
+    // 检查是否显示回到底部按钮
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100;
+    setShowScrollToBottom(!isNearBottom);
+  }, [hasMoreMessages, isLoadingMore, loadMoreMessages]);
 
   // 自动滚动到底部
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   // 初始化时设置滚动位置到底部
-  const initializeScrollPosition = () => {
-    const messagesContainer = messagesEndRef.current?.parentElement;
+  const initializeScrollPosition = useCallback(() => {
+    const messagesContainer = messagesContainerRef.current;
     if (messagesContainer) {
-      // 使用 requestAnimationFrame 确保在下一帧执行，避免布局闪烁
       requestAnimationFrame(() => {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
       });
     }
-  };
+  }, []);
 
+  // 监听账本切换
   useEffect(() => {
-    // 只有当 selectedLedgerId 真正改变时才重新加载历史记录
     if (selectedLedgerId !== lastSelectedLedgerId.current) {
       lastSelectedLedgerId.current = selectedLedgerId;
+      setCurrentPage(0);
+      setHasMoreMessages(true);
+      isInitialLoad.current = true;
+      
       if (selectedLedgerId) {
-        setMessages([]); // 清空当前消息
-        loadChatHistory();
+        setMessages([]);
+        loadChatHistory(0, false);
       } else {
-        // 如果没有选中账本，清空消息并停止加载
         setMessages([]);
         setIsLoadingHistory(false);
       }
     }
-  }, [selectedLedgerId]);
+  }, [selectedLedgerId, loadChatHistory]);
 
+  // 监听消息变化，自动滚动
   useEffect(() => {
-    // 只有在有新消息时才滚动到底部，避免初始化时的闪烁
-    if (messages.length > 0 && !isLoadingHistory) {
-      scrollToBottom();
-    } else if (messages.length === 0 && !isLoadingHistory) {
-      // 当没有消息且加载完成时，确保显示在底部
-      initializeScrollPosition();
+    if (messages.length > 0 && !isLoadingHistory && !isInitialLoad.current) {
+      const container = messagesContainerRef.current;
+      if (container) {
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100;
+        
+        // 只有在接近底部时才自动滚动
+        if (isNearBottom) {
+          scrollToBottom();
+        }
+      }
     }
-  }, [messages, isLoadingHistory, scrollToBottom, initializeScrollPosition]);
+  }, [messages, isLoadingHistory, scrollToBottom]);
+
+  // 设置滚动监听
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
 
   // 添加消息到聊天（本地状态）
-  const addMessage = (content: string, type: 'user' | 'assistant', bills?: Bill[] | BillCreate[]) => {
+  const addMessage = useCallback((content: string, type: 'user' | 'assistant', bills?: Bill[] | BillCreate[]) => {
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
       type,
@@ -119,7 +193,7 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
     if (bills && bills.length > 0 && onBillsCreated) {
       onBillsCreated(bills as Bill[]);
     }
-  };
+  }, [onBillsCreated]);
 
   // 发送文本消息
   const sendMessage = async () => {
@@ -381,9 +455,27 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* 聊天消息区域 */}
-      <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4">
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4 scroll-smooth"
+      >
+        {/* 加载更多历史消息指示器 */}
+        {isLoadingMore && (
+          <div className="flex justify-center items-center py-4">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="ml-2 text-xs text-gray-500">加载更多消息...</span>
+          </div>
+        )}
+
+        {/* 没有更多消息提示 */}
+        {!hasMoreMessages && messages.length > 0 && (
+          <div className="text-center py-2">
+            <span className="text-xs text-gray-400">没有更多消息了</span>
+          </div>
+        )}
+
         {isLoadingHistory ? (
           <div className="flex justify-center items-center h-32">
             <Loader2 className="h-6 w-6 animate-spin" />
@@ -396,18 +488,6 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
           </div>
         ) : (
           <>
-            {/* 清空聊天按钮 */}
-            {/* <div className="flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearChat}
-                className="text-gray-500 hover:text-red-500 text-xs"
-              >
-                清空聊天记录
-              </Button>
-            </div> */}
-            
             {messages.map((message) => (
               <div key={message.id} className="space-y-2 sm:space-y-3">
                 {/* 消息卡片 */}
@@ -419,9 +499,6 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
                   }`}>
                     <CardContent className="p-2 sm:p-3">
                       <p className="text-xs sm:text-sm break-words">{message.content}</p>
-                      {/* <p className="text-xs opacity-70 mt-1">
-                        {dayjs(message.timestamp).locale('zh-cn').format('YYYY-MM-DD HH:mm:ss')}
-                      </p> */}
                     </CardContent>
                     
                     {/* 删除按钮 */}
@@ -472,6 +549,18 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
         
         <div ref={messagesEndRef} />
       </div>
+
+      {/* 回到底部按钮 */}
+      {showScrollToBottom && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={scrollToBottom}
+          className="absolute bottom-20 right-4 z-10 h-8 w-8 p-0 rounded-full shadow-lg bg-white hover:bg-gray-50"
+        >
+          <ChevronUp className="h-4 w-4 rotate-180" />
+        </Button>
+      )}
 
       {/* 输入区域 */}
       <div className="border-t p-2 sm:p-4 bg-white">
