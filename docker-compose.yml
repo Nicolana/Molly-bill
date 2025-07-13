@@ -5,6 +5,8 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: molly-bill-postgres
+    env_file:
+      - docker.env
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-molly_bill}
       POSTGRES_USER: ${POSTGRES_USER:-molly_user}
@@ -28,6 +30,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: molly-bill-backend
+    env_file:
+      - docker.env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-molly_user}:${POSTGRES_PASSWORD:-molly_password}@postgres:5432/${POSTGRES_DB:-molly_bill}
       SECRET_KEY: ${SECRET_KEY:-your-super-secret-key-change-in-production}
@@ -54,9 +58,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
     container_name: molly-bill-frontend
+    env_file:
+      - docker.env
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8821}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
     depends_on:
       - backend
     ports:
