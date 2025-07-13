@@ -3,7 +3,11 @@ import { UserRole, BillType, InvitationStatus, LedgerStatus, BudgetPeriodType, B
 export interface User {
   id: number;
   email: string;
+  username?: string;
+  avatar?: string;
   created_at: string;
+  current_ledger_id?: number;
+  user_ledgers?: UserLedger[];
 }
 
 export interface Bill {

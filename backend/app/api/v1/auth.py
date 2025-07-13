@@ -66,9 +66,46 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     )
 
 @router.get("/me", response_model=BaseResponse)
-def get_current_user_info(current_user: User = Depends(get_current_user)):
+def get_current_user_info(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """获取当前用户信息"""
+    from app.crud.ledger import get_user_ledgers
+    
+    # 获取用户的账本信息
+    user_ledgers = get_user_ledgers(db, current_user.id)
+    
+    # 构建用户响应数据
+    user_data = {
+        "id": current_user.id,
+        "email": current_user.email,
+        "username": current_user.username,
+        "avatar": current_user.avatar,
+        "created_at": current_user.created_at,
+        "current_ledger_id": current_user.current_ledger_id,
+        "user_ledgers": []
+    }
+    
+    # 添加账本信息
+    for user_ledger in user_ledgers:
+        user_data["user_ledgers"].append({
+            "id": user_ledger.id,
+            "user_id": user_ledger.user_id,
+            "ledger_id": user_ledger.ledger_id,
+            "role": user_ledger.role,
+            "joined_at": user_ledger.joined_at,
+            "status": user_ledger.status,
+            "ledger": {
+                "id": user_ledger.ledger.id,
+                "name": user_ledger.ledger.name,
+                "description": user_ledger.ledger.description,
+                "currency": user_ledger.ledger.currency,
+                "timezone": user_ledger.ledger.timezone,
+                "status": user_ledger.ledger.status,
+                "created_at": user_ledger.ledger.created_at,
+                "deleted_at": user_ledger.ledger.deleted_at
+            }
+        })
+    
     return success_response(
-        data=UserResponse.model_validate(current_user),
+        data=user_data,
         message="获取用户信息成功"
     ) 

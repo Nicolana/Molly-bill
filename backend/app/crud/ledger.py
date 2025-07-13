@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime, timedelta
 from app.models import Ledger, UserLedger, UserRole, LedgerStatus
@@ -33,7 +33,9 @@ def create_personal_ledger(db: Session, user_id: int, username: str):
 
 def get_user_ledgers(db: Session, user_id: int):
     """获取用户的所有账本"""
-    return db.query(UserLedger).filter(
+    return db.query(UserLedger).options(
+        joinedload(UserLedger.ledger)
+    ).filter(
         UserLedger.user_id == user_id,
         UserLedger.status == "active"
     ).all()
