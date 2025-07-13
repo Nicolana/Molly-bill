@@ -19,7 +19,6 @@ export default function BillList({
   bills, 
   selectedDate, 
   onDateChange, 
-  onDeleteBill, 
   title = "账单记录" 
 }: BillListProps) {
   // 计算当日统计

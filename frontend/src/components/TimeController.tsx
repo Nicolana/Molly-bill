@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Calendar, ChevronLeft, ChevronRight, Clock, CalendarDays, ChevronDown, ChevronUp } from 'lucide-react';
 import dayjs from 'dayjs';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import 'dayjs/locale/zh-cn';
@@ -33,30 +32,7 @@ interface TimeControllerProps {
 }
 
 export default function TimeController({ value, onChange, className = '' }: TimeControllerProps) {
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(true);
-  
-  // 获取当前时间范围的显示文本
-  const getDisplayText = () => {
-    const now = dayjs();
-    switch (value.quickMode) {
-      case 'today':
-        return now.format('YYYY年MM月DD日');
-      case 'week':
-        const weekStart = now.startOf('week');
-        const weekEnd = now.endOf('week');
-        return `${weekStart.format('MM月DD日')} - ${weekEnd.format('MM月DD日')}`;
-      case 'month':
-        return now.format('YYYY年MM月');
-      case 'quarter':
-        const quarter = Math.floor(now.month() / 3) + 1;
-        return `${now.year()}年第${quarter}季度`;
-      case 'year':
-        return now.format('YYYY年');
-      default:
-        return now.format('YYYY年MM月');
-    }
-  };
+  const [isExpanded] = useState(true);
 
   // 计算时间范围
   const calculateTimeRange = (mode: QuickMode): TimeRange => {
@@ -103,49 +79,6 @@ export default function TimeController({ value, onChange, className = '' }: Time
       mode: 'quick',
       quickMode: mode,
       range
-    });
-  };
-
-  // 处理时间导航
-  const handleTimeNavigation = (direction: 'prev' | 'next') => {
-    const now = dayjs();
-    let newDate;
-    
-    switch (value.quickMode) {
-      case 'today':
-        newDate = direction === 'prev' ? now.subtract(1, 'day') : now.add(1, 'day');
-        break;
-      case 'week':
-        newDate = direction === 'prev' ? now.subtract(1, 'week') : now.add(1, 'week');
-        break;
-      case 'month':
-        newDate = direction === 'prev' ? now.subtract(1, 'month') : now.add(1, 'month');
-        break;
-      case 'quarter':
-        newDate = direction === 'prev' ? now.subtract(1, 'quarter') : now.add(1, 'quarter');
-        break;
-      case 'year':
-        newDate = direction === 'prev' ? now.subtract(1, 'year') : now.add(1, 'year');
-        break;
-      default:
-        newDate = now;
-    }
-
-    // 重新计算基于新日期的时间范围
-    const range = calculateTimeRange(value.quickMode);
-    onChange({
-      ...value,
-      range
-    });
-  };
-
-  // 回到今天
-  const handleToday = () => {
-    const range = calculateTimeRange(value.quickMode);
-    onChange({
-      ...value,
-      range,
-      selectedDate: new Date()
     });
   };
 

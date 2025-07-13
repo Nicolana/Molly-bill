@@ -14,7 +14,7 @@ interface CalendarViewProps {
   onDateSelect: (date: Date) => void;
 }
 
-export default function CalendarView({ bills, selectedDate, onDateSelect }: CalendarViewProps) {
+export default function CalendarView({ bills, selectedDate }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // 计算指定日期的支出

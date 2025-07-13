@@ -43,9 +43,6 @@ export default function OverviewPanel({
   bills,
   previousBills,
   timeRange,
-  onAddBill,
-  onExportData,
-  onSetBudget,
   className = ''
 }: OverviewPanelProps) {
   

@@ -15,8 +15,6 @@ import {
   PieChart, 
   Pie, 
   Cell,
-  LineChart,
-  Line,
   Legend,
   Area,
   AreaChart
@@ -25,7 +23,6 @@ import {
   TrendingUp, 
   PieChart as PieChartIcon,
   Calendar,
-  BarChart3,
   Activity,
   Eye,
   EyeOff
@@ -59,13 +56,11 @@ interface CategoryData {
 export default function AnalyticsPanel({
   bills,
   timeRange,
-  quickMode,
   onDateSelect,
   className = ''
 }: AnalyticsPanelProps) {
   const [activeTab, setActiveTab] = useState('trend');
   const [showCumulative, setShowCumulative] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // 生成趋势数据
   const generateTrendData = (): ChartData[] => {

@@ -73,10 +73,6 @@ export default function IncomeExpenseChart({
   onDateRangeChange,
   className = ''
 }: IncomeExpenseChartProps) {
-  // 计算总收入和总支出
-  const totalIncome = data.reduce((sum, item) => sum + item.income, 0);
-  const totalExpense = data.reduce((sum, item) => sum + item.expense, 0);
-  const netAmount = totalIncome - totalExpense;
 
   const getChartTitle = () => {
     switch (timeFilter) {

@@ -380,18 +380,6 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
     }
   };
 
-  // 清空聊天记录
-  const clearChat = async () => {
-    if (confirm('确定要清空所有聊天记录吗？')) {
-      try {
-        // 这里可以添加清空所有消息的API调用
-        setMessages([]);
-      } catch (error) {
-        console.error('清空聊天记录失败:', error);
-      }
-    }
-  };
-
   // 更新账单
   const handleUpdateBill = async (id: number, data: Partial<BillCreate>) => {
     try {

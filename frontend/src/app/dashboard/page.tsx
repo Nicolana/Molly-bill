@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, BookOpen, ChevronUp, ChevronDown } from 'lucide-react';
-import { Bill, BillCreate } from '@/types';
+import { Bill } from '@/types';
 import { billsAPI } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ChatInterface from '@/components/ChatInterface';
@@ -21,7 +21,7 @@ export default function DashboardPage() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [previousBills, setPreviousBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [, setError] = useState('');
   const [isChatExpanded, setIsChatExpanded] = useState(true);
   
   // 时间控制器状态
@@ -95,7 +95,7 @@ export default function DashboardPage() {
   };
 
   // 处理新账单创建
-  const handleBillsCreated = async (newBills: BillCreate[]) => {
+  const handleBillsCreated = async () => {
     await fetchBills(timeState.range.start, timeState.range.end);
   };
 
@@ -127,22 +127,6 @@ export default function DashboardPage() {
       fetchBills(timeState.range.start, timeState.range.end);
     }
   }, [currentLedgerId]);
-
-  // 操作处理函数
-  const handleAddBill = () => {
-    // 这里可以打开添加账单的对话框或导航到添加页面
-    console.log('添加账单');
-  };
-
-  const handleExportData = () => {
-    // 导出数据功能
-    console.log('导出数据');
-  };
-
-  const handleSetBudget = () => {
-    // 设置预算功能
-    console.log('设置预算');
-  };
 
   if (loading && bills.length === 0) {
     return (
