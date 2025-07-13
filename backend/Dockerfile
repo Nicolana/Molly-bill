@@ -27,8 +27,12 @@ COPY . .
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
-# 创建非root用户
+# 创建非root用户并设置文件所有权
 RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
+
+# 确保启动脚本有执行权限
+RUN chmod +x /app/entrypoint.sh
+
 USER app
 
 # 暴露端口
