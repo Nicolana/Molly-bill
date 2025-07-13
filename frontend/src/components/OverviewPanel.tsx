@@ -2,18 +2,13 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { 
   TrendingUp, 
-  TrendingDown, 
   DollarSign, 
   Receipt, 
   PiggyBank,
   ArrowUpRight,
   ArrowDownRight,
-  Plus,
-  Download,
-  Target
 } from 'lucide-react';
 import { Bill } from '@/types';
 import dayjs from 'dayjs';
@@ -265,26 +260,6 @@ export default function OverviewPanel({
               </div>
               <div className="text-sm text-gray-600 mt-1">财务状态</div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 操作按钮 */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={onAddBill} className="flex items-center space-x-2">
-              <Plus className="h-4 w-4" />
-              <span>添加账单</span>
-            </Button>
-            <Button variant="outline" onClick={onExportData} className="flex items-center space-x-2">
-              <Download className="h-4 w-4" />
-              <span>导出数据</span>
-            </Button>
-            <Button variant="outline" onClick={onSetBudget} className="flex items-center space-x-2">
-              <Target className="h-4 w-4" />
-              <span>设置预算</span>
-            </Button>
           </div>
         </CardContent>
       </Card>

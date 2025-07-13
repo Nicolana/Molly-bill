@@ -204,9 +204,6 @@ export default function DashboardPage() {
                 bills={bills}
                 previousBills={previousBills}
                 timeRange={timeState.range}
-                onAddBill={handleAddBill}
-                onExportData={handleExportData}
-                onSetBudget={handleSetBudget}
               />
 
               {/* 分析面板 */}
@@ -246,9 +243,6 @@ export default function DashboardPage() {
                 bills={bills}
                 previousBills={previousBills}
                 timeRange={timeState.range}
-                onAddBill={handleAddBill}
-                onExportData={handleExportData}
-                onSetBudget={handleSetBudget}
               />
             </div>
 

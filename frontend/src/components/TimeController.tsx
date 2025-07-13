@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Calendar, ChevronLeft, ChevronRight, Clock, CalendarDays, ChevronDown, ChevronUp } from 'lucide-react';
 import dayjs from 'dayjs';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
@@ -33,7 +34,7 @@ interface TimeControllerProps {
 
 export default function TimeController({ value, onChange, className = '' }: TimeControllerProps) {
   const [showCalendar, setShowCalendar] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   
   // 获取当前时间范围的显示文本
   const getDisplayText = () => {
@@ -150,9 +151,9 @@ export default function TimeController({ value, onChange, className = '' }: Time
 
   return (
     <Card className={`${className}`}>
-      <CardContent className="p-2">
+      <CardContent>
         {/* 顶部控制栏 */}
-        <div className="flex items-center justify-between mb-1">
+        {/* <div className="flex items-center justify-between mb-1">
           <div className="flex items-center space-x-2">
             <Clock className="h-4 w-4 text-blue-600" />
             <span className="text-sm font-medium text-gray-700">时间控制</span>
@@ -164,6 +165,9 @@ export default function TimeController({ value, onChange, className = '' }: Time
             >
               {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>
+          </div>
+          <div className="text-center px-2 py-1 bg-blue-50 rounded text-sm font-medium text-blue-900">
+            {getDisplayText()}
           </div>
           <div className="flex items-center space-x-1">
             <Button
@@ -191,12 +195,7 @@ export default function TimeController({ value, onChange, className = '' }: Time
               <ChevronRight className="h-3 w-3" />
             </Button>
           </div>
-        </div>
-
-        {/* 当前时间范围显示 */}
-        <div className="text-center px-2 py-1 bg-blue-50 rounded text-sm font-medium text-blue-900 mb-1">
-          {getDisplayText()}
-        </div>
+        </div> */}
 
         {/* 折叠内容 */}
         <div className={`transition-all duration-300 overflow-hidden ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
@@ -252,32 +251,34 @@ export default function TimeController({ value, onChange, className = '' }: Time
             <div className="space-y-2">
               <div className="text-sm font-medium text-gray-700">自定义范围</div>
               <div className="flex items-center space-x-2">
-                <input
-                  type="date"
-                  value={dayjs(value.range.start).format('YYYY-MM-DD')}
-                  onChange={(e) => {
-                    const start = new Date(e.target.value);
-                    onChange({
-                      ...value,
-                      mode: 'range',
-                      range: { ...value.range, start }
-                    });
+                <DatePicker
+                  date={value.range.start}
+                  onDateChange={(date) => {
+                    if (date) {
+                      onChange({
+                        ...value,
+                        mode: 'range',
+                        range: { ...value.range, start: date }
+                      });
+                    }
                   }}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="开始日期"
+                  className="flex-1"
                 />
                 <span className="text-gray-500">至</span>
-                <input
-                  type="date"
-                  value={dayjs(value.range.end).format('YYYY-MM-DD')}
-                  onChange={(e) => {
-                    const end = new Date(e.target.value);
-                    onChange({
-                      ...value,
-                      mode: 'range',
-                      range: { ...value.range, end }
-                    });
+                <DatePicker
+                  date={value.range.end}
+                  onDateChange={(date) => {
+                    if (date) {
+                      onChange({
+                        ...value,
+                        mode: 'range',
+                        range: { ...value.range, end: date }
+                      });
+                    }
                   }}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="结束日期"
+                  className="flex-1"
                 />
               </div>
             </div>
