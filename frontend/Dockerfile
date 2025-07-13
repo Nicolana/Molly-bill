@@ -8,8 +8,8 @@ WORKDIR /app
 
 # 复制package文件
 COPY package.json pnpm-lock.yaml* ./
-RUN npm install -g pnpm
-RUN pnpm install --frozen-lockfile
+RUN npm install -g pnpm --registry=https://registry.npmmirror.com/
+RUN pnpm install --frozen-lockfile --registry=https://registry.npmmirror.com/
 
 # 构建阶段
 FROM base AS builder
@@ -21,7 +21,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # 构建应用
-RUN npm install -g pnpm
+RUN npm install -g pnpm --registry=https://registry.npmmirror.com/
 RUN pnpm build
 
 # 运行阶段
