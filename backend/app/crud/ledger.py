@@ -47,7 +47,7 @@ def get_user_ledgers(db: Session, user_id: int):
     ).filter(
         UserLedger.user_id == user_id,
         UserLedger.status == "active"
-    ).all()
+    ).join(UserLedger.ledger).filter(Ledger.status == LedgerStatus.ACTIVE).all()
 
 def get_ledger(db: Session, ledger_id: int):
     """获取账本信息"""
@@ -131,6 +131,8 @@ def delete_ledger(db: Session, ledger_id: int):
     if ledger:
         ledger.status = LedgerStatus.DELETED
         ledger.deleted_at = datetime.utcnow()
+
+        db.query(UserLedger).filter(UserLedger.ledger_id == ledger_id, UserLedger.status == "active").update({"status": "inactive"})
         db.commit()
         return True
     return False
