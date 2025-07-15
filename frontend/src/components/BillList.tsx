@@ -4,8 +4,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from 'lucide-react';
 import { Bill } from '@/types';
-import BillCard from './BillCard';
-import dayjs from 'dayjs';
+import BillCardMain from './BillCardMain';
 
 interface BillListProps {
   bills: Bill[];
@@ -17,8 +16,8 @@ export default function BillList({
   title = "账单记录" 
 }: BillListProps) {
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="gap-2">
+      <CardHeader>
         <div className="flex flex-col space-y-3">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
@@ -41,7 +40,7 @@ export default function BillList({
           <div className="grid grid-cols-1 gap-2 sm:gap-3 max-h-200 overflow-auto">
             {bills.map((bill, index) => (
               <div key={bill.id} className="relative group">
-                <BillCard bill={bill} index={index} showRecordLabel={false} />
+                <BillCardMain bill={bill} index={index} showRecordLabel={false} />
               </div>
             ))}
           </div>
