@@ -57,4 +57,4 @@ def get_recent_chat_messages(db: Session, ledger_id: int, limit: int = 50):
     """获取账本最近的聊天消息（按时间正序），包含关联的账单信息"""
     return db.query(ChatMessage).filter(
         ChatMessage.ledger_id == ledger_id
-    ).order_by(ChatMessage.timestamp.asc()).limit(limit).all() 
+    ).order_by(ChatMessage.timestamp.desc()).limit(limit).all() 
