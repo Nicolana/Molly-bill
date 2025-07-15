@@ -201,7 +201,7 @@ export default function DashboardPage() {
               {/* 账单列表 */}
               <BillList 
                 bills={bills}
-                title="选定日期账单"
+                title="账单明细"
               />
             </div>
           </div>
