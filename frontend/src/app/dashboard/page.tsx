@@ -200,10 +200,7 @@ export default function DashboardPage() {
 
               {/* 账单列表 */}
               <BillList 
-                bills={bills.filter(bill => dayjs(bill.date).isSame(timeState.selectedDate, 'day'))}
-                selectedDate={timeState.selectedDate}
-                onDateChange={handleDateSelect}
-                onDeleteBill={deleteBill}
+                bills={bills}
                 title="选定日期账单"
               />
             </div>
@@ -243,10 +240,7 @@ export default function DashboardPage() {
             {/* 账单列表 - 移动端 */}
             <div className="px-4">
               <BillList 
-                bills={bills.filter(bill => dayjs(bill.date).isSame(timeState.selectedDate, 'day'))}
-                selectedDate={timeState.selectedDate}
-                onDateChange={handleDateSelect}
-                onDeleteBill={deleteBill}
+                bills={bills}
                 title="选定日期账单"
               />
             </div>
