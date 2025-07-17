@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, TrendingUp, TrendingDown } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { Bill } from '@/types';
 import { BillType } from '@/constants/enums';
 import BillCardMain from './BillCardMain';

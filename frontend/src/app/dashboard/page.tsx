@@ -83,17 +83,6 @@ export default function DashboardPage() {
     }
   };
 
-  // 删除账单
-  const deleteBill = async (id: number) => {
-    try {
-      await billsAPI.deleteBill(id);
-      fetchBills(timeState.range.start, timeState.range.end);
-    } catch (err) {
-      console.error('删除账单失败:', err);
-      alert('删除账单失败');
-    }
-  };
-
   // 处理新账单创建
   const handleBillsCreated = async () => {
     await fetchBills(timeState.range.start, timeState.range.end);
