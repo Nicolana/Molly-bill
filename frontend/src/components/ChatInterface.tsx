@@ -160,20 +160,14 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   }, [selectedLedgerId, loadChatHistory]);
 
   // 监听消息变化，自动滚动
-  // useEffect(() => {
-  //   if (messages.length > 0 && !isLoadingHistory && !isInitialLoad.current) {
-  //     const container = messagesContainerRef.current;
-  //     if (container) {
-  //       const { scrollTop, scrollHeight, clientHeight } = container;
-  //       const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100;
-        
-  //       // 只有在接近底部时才自动滚动
-  //       if (isNearBottom) {
-  //         scrollToBottom();
-  //       }
-  //     }
-  //   }
-  // }, [messages, isLoadingHistory, scrollToBottom]);
+  useEffect(() => {
+    if (messages.length > 0 && !isLoadingHistory && !isInitialLoad.current) {
+      const container = messagesContainerRef.current;
+      if (container) {
+        scrollToBottom();
+      }
+    }
+  }, [messages, isLoadingHistory]);
 
   // 设置滚动监听
   useEffect(() => {
