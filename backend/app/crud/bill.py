@@ -14,9 +14,9 @@ def get_bills(db: Session, ledger_id: int, skip: int = 0, limit: int = 100, star
     
     return query.order_by(Bill.date.desc()).offset(skip).limit(limit).all()
 
-def get_bills_no_pagination(db: Session, ledger_id: int, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
+def get_bills_no_pagination(db: Session, user_id: int, ledger_id: int, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
     """获取账本账单，支持时间筛选，不分页"""
-    query = db.query(Bill).filter(Bill.ledger_id == ledger_id)
+    query = db.query(Bill).filter(Bill.ledger_id == ledger_id, Bill.owner_id == user_id)
     
     # 添加时间筛选
     if start_date and end_date:
@@ -88,7 +88,10 @@ def update_bill(db: Session, bill_id: int, user_id: int, **kwargs):
     return None
 
 def delete_bill(db: Session, bill_id: int, user_id: int):
+    print("Bill Id =", bill_id)
+    print("User id =", user_id)
     bill = db.query(Bill).filter(Bill.id == bill_id, Bill.owner_id == user_id).first()
+    print("Bill =", bill)
     if bill:
         # 保存账单信息用于重新计算预算
         ledger_id = bill.ledger_id

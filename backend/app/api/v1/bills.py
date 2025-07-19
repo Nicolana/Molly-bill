@@ -65,8 +65,9 @@ def get_ledger_bills(
     # 如果没有提供具体的start_date和end_date，则使用time_filter
     if not start_date and not end_date and time_filter:
         start_date, end_date = get_date_range_from_filter(time_filter)
+    user_id = current_user.id
     
-    bills = get_bills_no_pagination(db, ledger_id, start_date, end_date)
+    bills = get_bills_no_pagination(db, user_id, ledger_id, start_date, end_date)
     
     # 使用Pydantic模型自动序列化
     bills_data = [BillResponse.model_validate(bill) for bill in bills]

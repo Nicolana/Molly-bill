@@ -1,12 +1,12 @@
 from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey, Enum
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, mapped_column
 import datetime
 from app.db.database import Base
 from app.models.enums import BillType
 
 class Bill(Base):
     __tablename__ = "bills"
-    id = Column(Integer, primary_key=True, index=True)
+    id = mapped_column(Integer, primary_key=True, index=True)
     amount = Column(Float, nullable=False)
     type = Column(Enum(BillType), default=BillType.EXPENSE, nullable=False)  # 收入或支出
     category = Column(String, index=True)

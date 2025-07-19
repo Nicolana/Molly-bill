@@ -12,7 +12,7 @@ def get_user_by_email(db: Session, email: str):
 
 def create_user(db: Session, user: UserCreate):
     hashed_password = get_password_hash(user.password)
-    db_user = User(
+    db_user: User = User(
         email=user.email, 
         username=user.username,
         avatar=user.avatar,
