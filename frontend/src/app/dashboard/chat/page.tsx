@@ -17,8 +17,8 @@ export default function ChatPage() {
       <div className="h-[calc(100vh-65px-72px)] lg:h-[calc(100vh-65px)] bg-gray-50">
         <main className="max-w-7xl mx-auto lg:px-4 sm:px-0 lg:px-8 lg:py-8 lg:pb-20 md:pb-8 h-full">
           <div className="space-y-6 h-full">
-            <Card className="h-full lg:rounded-xl rounded-none">
-              <CardHeader>
+            <Card className="h-full lg:rounded-xl rounded-none py-0 lg:py-6">
+              <CardHeader className='hidden lg:block'>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center space-x-2">
                     <MessageSquare className="h-5 w-5" />
@@ -38,7 +38,7 @@ export default function ChatPage() {
                   </Link>
                 </div>
               </CardHeader>
-              <CardContent className="h-[calc(100%-80px)] p-0">
+              <CardContent className="h-full lg:h-[calc(100%-80px)] p-0">
                 <ChatInterface
                   selectedLedgerId={currentLedgerId || undefined}
                 />
