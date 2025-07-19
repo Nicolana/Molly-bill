@@ -73,7 +73,7 @@ export default function BillCard({ bill, showRecordLabel = true, onUpdate, onDel
       <Card className={`bg-white shadow-sm hover:shadow-md transition-shadow py-0 w-full ${
         isFullBill ? 'cursor-pointer' : ''
       }`} onClick={handleCardClick}>
-      <CardContent className="p-3 sm:p-4 min-w-[330px] sm:w-full">
+      <CardContent className="p-3 sm:p-4 lg:min-w-[330px] w-full">
         {/* 顶部区域 */}
         <div className="flex items-center justify-between mb-2 sm:mb-3">
           {showRecordLabel ? (

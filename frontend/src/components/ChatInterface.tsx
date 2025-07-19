@@ -450,7 +450,7 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
                 {/* 账单卡片 - 单独显示 */}
                 {message.bills && message.bills.length > 0 && (
                   <div className="flex justify-start">
-                    <div className="max-w-[85%] sm:max-w-xs lg:max-w-md space-y-2">
+                    <div className="w-full lg:w-auto max-w-full lg:max-w-[85%] sm:max-w-xs lg:max-w-md space-y-2">
                       {message.bills.map((bill: BillCreate, index) => (
                         <BillCard 
                           key={index} 
