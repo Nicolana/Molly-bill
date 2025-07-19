@@ -160,11 +160,8 @@ def delete_bill_endpoint(
     """删除账单（仅账单创建者）"""
     if delete_bill(db, bill_id, current_user.id):
         return success_response(
-            data={"message": "账单已删除"},
+            data=True,
             message="账单删除成功"
         )
     
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="账单不存在或无权限删除"
-    ) 
+    return error_response(message="账单不存在或无权限删除", data=False)

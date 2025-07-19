@@ -16,6 +16,7 @@ import { useLedgerStore } from '@/store/ledger';
 import Link from 'next/link';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
+import eventBus from '@/lib/eventBus';
 
 export default function DashboardPage() {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -114,6 +115,16 @@ export default function DashboardPage() {
   useEffect(() => {
     if (currentLedgerId) {
       fetchBills(timeState.range.start, timeState.range.end);
+    }
+
+    const handleBillDelete = (billId: number) => {
+      setBills(prev => prev.filter(bill => bill.id !== billId));
+      setPreviousBills(prev => prev.filter(bill => bill.id !== billId));
+    };
+
+    eventBus.on('bill:delete', handleBillDelete);
+    return () => {
+      eventBus.off('bill:delete', handleBillDelete);
     }
   }, [currentLedgerId]);
 

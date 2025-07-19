@@ -31,6 +31,8 @@ import {
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import { billsAPI } from '@/lib/api';
+import { toast } from 'sonner';
+import eventBus from '@/lib/eventBus';
 
 interface BillDetailDialogProps {
   open: boolean;
@@ -120,10 +122,16 @@ export default function BillDetailDialog({ open, onClose, bill, onUpdate, onDele
         setError('');
         const response = await billsAPI.deleteBill(bill.id);
         console.log(response);
-        if (onDelete) {
-          await onDelete(bill.id);
+        if (response?.data.data) {
+          // 删除成功
+          toast.success('删除成功');
+          eventBus.emit('bill:delete', bill.id);
+          onDelete?.(bill.id);
+          onClose();
+        } else {
+          // 删除失败，提示删除失败
+          toast.error('删除失败')
         }
-        onClose();
       } catch (err) {
         setError(err instanceof Error ? err.message : '删除失败');
       } finally {
