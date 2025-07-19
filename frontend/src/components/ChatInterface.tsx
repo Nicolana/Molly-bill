@@ -2,12 +2,12 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChatMessage, BillCreate, Bill } from '@/types';
 import { aiAPI, billsAPI } from '@/lib/api';
-import { Mic, MicOff, Camera, Send, Loader2, Trash2, ChevronUp } from 'lucide-react';
+import { Loader2, Trash2, ChevronUp } from 'lucide-react';
 import BillCard from './BillCard';
+import ChatInput from './ChatInput';
 import { toast } from 'sonner';
 
 interface ChatInterfaceProps {
@@ -25,24 +25,20 @@ const INITIAL_PAGE_SIZE = 20; // 每页加载的消息数量
 
 export default function ChatInterface({ onBillsCreated, selectedLedgerId }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,
     skip: 0,
     limit: INITIAL_PAGE_SIZE
   })
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const lastSelectedLedgerId = useRef<number | undefined>(undefined);
   const isInitialLoad = useRef(true);
 
@@ -208,8 +204,8 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   }, [onBillsCreated]);
 
   // 发送文本消息
-  const sendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return;
+  const sendMessage = async (message: string) => {
+    if (!message.trim() || isLoading) return;
 
     // 检查是否选中了账本
     if (!selectedLedgerId) {
@@ -217,24 +213,23 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
       return;
     }
 
-    const userMessage = inputValue.trim();
-    setInputValue('');
+    const userMessage = message.trim();
     setIsLoading(true);
 
     // 添加用户消息到本地状态
     addMessage(userMessage, 'user');
 
     try {
-      const response = await aiAPI.chat({ 
+      const response = await aiAPI.chat({
         message: userMessage,
         ledger_id: selectedLedgerId
       });
-      
+
       // 检查统一返回格式
       if (!response.data?.success) {
         throw new Error(response.data?.message || '聊天失败');
       }
-      
+
       const { message, bills } = response.data.data || {};
       // 添加AI回复到本地状态
       addMessage(message || '抱歉，我没有理解您的意思。', 'assistant', bills);
@@ -246,53 +241,10 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
     }
   };
 
-  // 开始录音
-  const startRecording = async () => {
-    // 检查是否选中了账本
-    if (!selectedLedgerId) {
-      addMessage('请先在账本管理页面选择一个账本，然后再开始录音。', 'assistant');
-      return;
-    }
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const audioChunks: Blob[] = [];
-
-      recorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
-      };
-
-      recorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const base64Audio = (reader.result as string).split(',')[1];
-          await processVoiceInput(base64Audio);
-        };
-        reader.readAsDataURL(audioBlob);
-      };
-
-      recorder.start();
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-    } catch (error) {
-      console.error('无法访问麦克风:', error);
-      alert('无法访问麦克风，请检查权限设置。请确保已授予麦克风权限。');
-    }
-  };
-
-  // 停止录音
-  const stopRecording = () => {
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop();
-      mediaRecorder.stream.getTracks().forEach(track => track.stop());
-      setIsRecording(false);
-    }
-  };
 
   // 处理语音输入
-  const processVoiceInput = async (audioData: string) => {
+  const handleVoiceInput = async (audioData: string) => {
     // 检查是否选中了账本
     if (!selectedLedgerId) {
       addMessage('请先在账本管理页面选择一个账本，然后再开始语音输入。', 'assistant');
@@ -301,19 +253,19 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
 
     setIsLoading(true);
     try {
-      const response = await aiAPI.chat({ 
-        message: '语音输入', 
+      const response = await aiAPI.chat({
+        message: '语音输入',
         audio: audioData,
         ledger_id: selectedLedgerId
       });
-      
+
       // 检查统一返回格式
       if (!response.data?.success) {
         throw new Error(response.data?.message || '语音识别失败');
       }
-      
+
       const { message, bills } = response.data.data || {};
-      
+
       if (message) {
         addMessage(message, 'assistant', bills);
       } else {
@@ -328,26 +280,7 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   };
 
   // 处理图片输入
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // 检查是否选中了账本
-    if (!selectedLedgerId) {
-      addMessage('请先在账本管理页面选择一个账本，然后再上传图片。', 'assistant');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64Image = (reader.result as string).split(',')[1];
-      await processImageInput(base64Image);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // 处理图片分析
-  const processImageInput = async (imageData: string) => {
+  const handleImageInput = async (imageData: string) => {
     // 检查是否选中了账本
     if (!selectedLedgerId) {
       addMessage('请先在账本管理页面选择一个账本，然后再开始图片分析。', 'assistant');
@@ -356,19 +289,19 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
 
     setIsLoading(true);
     try {
-      const response = await aiAPI.chat({ 
-        message: '图片分析', 
+      const response = await aiAPI.chat({
+        message: '图片分析',
         image: imageData,
         ledger_id: selectedLedgerId
       });
-      
+
       // 检查统一返回格式
       if (!response.data?.success) {
         throw new Error(response.data?.message || '图片分析失败');
       }
-      
+
       const { message, bills } = response.data.data || {};
-      
+
       if (message) {
         addMessage(message, 'assistant', bills);
       } else {
@@ -564,71 +497,14 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
       )}
 
       {/* 输入区域 */}
-      <div className="border-t p-2 sm:p-4 bg-white">
-        <div className="flex items-center space-x-1 sm:space-x-2">
-          {/* 图片上传按钮 */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
-            className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3"
-          >
-            <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline ml-1">图片</span>
-          </Button>
-          
-          {/* 语音按钮 */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={isLoading}
-            className={`flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3 ${
-              isRecording ? 'bg-red-500 text-white hover:bg-red-600' : ''
-            }`}
-          >
-            {isRecording ? (
-              <MicOff className="h-3 w-3 sm:h-4 sm:w-4" />
-            ) : (
-              <Mic className="h-3 w-3 sm:h-4 sm:w-4" />
-            )}
-            <span className="hidden sm:inline ml-1">
-              {isRecording ? '停止' : '语音'}
-            </span>
-          </Button>
-          
-          {/* 文本输入 */}
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="输入记账信息..."
-            className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
-            disabled={isLoading}
-          />
-          
-          {/* 发送按钮 */}
-          <Button
-            onClick={sendMessage}
-            disabled={!inputValue.trim() || isLoading}
-            size="sm"
-            className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3"
-          >
-            <Send className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline ml-1">发送</span>
-          </Button>
-        </div>
-        
-        {/* 隐藏的文件输入 */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleImageUpload}
-          className="hidden"
-        />
-      </div>
+      <ChatInput
+        onSendMessage={sendMessage}
+        onVoiceInput={handleVoiceInput}
+        onImageInput={handleImageInput}
+        isLoading={isLoading}
+        disabled={!selectedLedgerId}
+        placeholder={selectedLedgerId ? "输入记账信息..." : "请先选择账本"}
+      />
     </div>
   );
 } 
