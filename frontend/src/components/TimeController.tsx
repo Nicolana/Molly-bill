@@ -45,8 +45,8 @@ export default function TimeController({ value, onChange, className = '' }: Time
         };
       case 'week':
         return {
-          start: now.startOf('week').toDate(),
-          end: now.endOf('week').toDate()
+          start: now.startOf('week').add(1, 'day').toDate(),
+          end: now.endOf('week').add(1, 'day').toDate()
         };
       case 'month':
         return {
