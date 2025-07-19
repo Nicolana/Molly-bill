@@ -25,7 +25,6 @@ export default function CreateBudgetDialog({
   const [formData, setFormData] = useState<BudgetCreate>({
     name: '',
     amount: undefined,
-    category: '',
     period_type: BudgetPeriodType.MONTHLY,
     start_date: new Date().toISOString().split('T')[0],
     end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -57,7 +56,7 @@ export default function CreateBudgetDialog({
       newErrors.name = '预算名称不能为空';
     }
 
-    if (formData.amount <= 0) {
+    if (formData?.amount && formData?.amount <= 0) {
       newErrors.amount = '预算金额必须大于0';
     }
 
@@ -94,7 +93,6 @@ export default function CreateBudgetDialog({
     setFormData({
       name: '',
       amount: 0,
-      category: '',
       period_type: BudgetPeriodType.MONTHLY,
       start_date: new Date().toISOString().split('T')[0],
       end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -112,6 +110,9 @@ export default function CreateBudgetDialog({
     switch (period) {
       case BudgetPeriodType.MONTHLY:
         endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+        break;
+      case BudgetPeriodType.WEEKLY:
+        endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
         break;
       case BudgetPeriodType.QUARTERLY:
         endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 3, 0);
@@ -188,22 +189,10 @@ export default function CreateBudgetDialog({
                 )}
               </div>
 
-              {/* 预算分类 */}
-              <div className="space-y-2">
-                <Label htmlFor="category">预算分类</Label>
-                <Input
-                  id="category"
-                  type="text"
-                  value={formData.category}
-                  onChange={(e) => handleInputChange('category', e.target.value)}
-                  placeholder="如：餐饮、交通、购物等"
-                />
-              </div>
-
               {/* 预算周期 */}
               <div className="space-y-2">
                 <Label>预算周期</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {Object.values(BudgetPeriodType).map((period) => (
                     <Button
                       key={period}
@@ -212,9 +201,10 @@ export default function CreateBudgetDialog({
                       onClick={() => handlePeriodChange(period)}
                       className="text-sm"
                     >
-                      {period === BudgetPeriodType.MONTHLY && '月度'}
-                      {period === BudgetPeriodType.QUARTERLY && '季度'}
-                      {period === BudgetPeriodType.YEARLY && '年度'}
+                      {period === BudgetPeriodType.MONTHLY && '月'}
+                      {period === BudgetPeriodType.WEEKLY && '周'}
+                      {period === BudgetPeriodType.QUARTERLY && '季'}
+                      {period === BudgetPeriodType.YEARLY && '年'}
                       {period === BudgetPeriodType.CUSTOM && '自定义'}
                     </Button>
                   ))}
@@ -223,41 +213,41 @@ export default function CreateBudgetDialog({
 
               {/* 时间范围 */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="start_date">开始日期 *</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                    <Input
-                      id="start_date"
-                      type="date"
-                      value={formData.start_date}
-                      onChange={(e) => handleInputChange('start_date', e.target.value)}
-                      className={`pl-10 ${errors.start_date ? 'border-red-500' : ''}`}
-                    />
-                  </div>
-                  {errors.start_date && (
-                    <p className="text-sm text-red-500">{errors.start_date}</p>
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="start_date">开始日期 *</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => handleInputChange('start_date', e.target.value)}
+                    className={`pl-10 ${errors.start_date ? 'border-red-500' : ''}`}
+                  />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="end_date">结束日期 *</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                    <Input
-                      id="end_date"
-                      type="date"
-                      value={formData.end_date}
-                      onChange={(e) => handleInputChange('end_date', e.target.value)}
-                      className={`pl-10 ${errors.end_date ? 'border-red-500' : ''}`}
-                    />
-                  </div>
-                  {errors.end_date && (
-                    <p className="text-sm text-red-500">{errors.end_date}</p>
-                  )}
-                </div>
+                {errors.start_date && (
+                  <p className="text-sm text-red-500">{errors.start_date}</p>
+                )}
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="end_date">结束日期 *</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <Input
+                    id="end_date"
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) => handleInputChange('end_date', e.target.value)}
+                    className={`pl-10 ${errors.end_date ? 'border-red-500' : ''}`}
+                  />
+                </div>
+                {errors.end_date && (
+                  <p className="text-sm text-red-500">{errors.end_date}</p>
+                )}
+              </div>
+            </div>
+   
               {/* 预警阈值 */}
               <div className="space-y-2">
                 <Label htmlFor="alert_threshold">

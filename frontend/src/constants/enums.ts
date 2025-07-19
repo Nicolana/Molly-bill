@@ -33,6 +33,7 @@ export enum UserStatus {
 // 预算周期类型枚举
 export enum BudgetPeriodType {
   MONTHLY = 'monthly',
+  WEEKLY = 'weekly',
   QUARTERLY = 'quarterly',
   YEARLY = 'yearly',
   CUSTOM = 'custom'

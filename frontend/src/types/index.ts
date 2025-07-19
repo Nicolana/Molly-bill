@@ -182,7 +182,7 @@ export interface Budget {
 
 export interface BudgetCreate {
   name: string;
-  amount: number;
+  amount?: number;
   category?: string;
   period_type: BudgetPeriodType;
   start_date: string;
