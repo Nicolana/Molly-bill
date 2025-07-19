@@ -10,6 +10,19 @@ from app.models.enums import BudgetStatus, BillType, AlertType
 # 预算CRUD操作
 def create_budget(db: Session, budget: BudgetCreate, user_id: int) -> Budget:
     """创建预算"""
+
+    # 计算该预算时间范围内的已有支出
+    total_spend = db.query(func.sum(Bill.amount)).filter(
+        and_(
+            Bill.ledger_id == budget.ledger_id,
+            Bill.owner_id == user_id,
+            Bill.type == BillType.EXPENSE,
+            Bill.date >= budget.start_date,
+            Bill.date <= budget.end_date
+        )
+    ).scalar() or 0.0
+    budget.spent = total_spend
+
     db_budget = Budget(
         **budget.model_dump(),
         created_by=user_id
@@ -17,6 +30,9 @@ def create_budget(db: Session, budget: BudgetCreate, user_id: int) -> Budget:
     db.add(db_budget)
     db.commit()
     db.refresh(db_budget)
+
+    print(db_budget)
+
     return db_budget
 
 def get_budget(db: Session, budget_id: int) -> Optional[Budget]:
@@ -41,14 +57,12 @@ def get_budgets_by_ledger(
 def get_active_budgets_by_category(
     db: Session, 
     ledger_id: int, 
-    category: str,
     current_date: datetime
 ) -> List[Budget]:
     """获取指定分类的活跃预算"""
     return db.query(Budget).filter(
         and_(
             Budget.ledger_id == ledger_id,
-            Budget.category == category,
             Budget.status == BudgetStatus.ACTIVE,
             Budget.start_date <= current_date,
             Budget.end_date >= current_date
@@ -80,17 +94,15 @@ def delete_budget(db: Session, budget_id: int) -> bool:
     db.commit()
     return True
 
-def update_budget_spent(db: Session, ledger_id: int, category: str, amount: float, bill_type: BillType):
+def update_budget_spent(db: Session, ledger_id: int, amount: float, bill_type: BillType, billDate: datetime):
     """更新预算支出金额"""
     if bill_type != BillType.EXPENSE:
         return
     
-    current_date = datetime.utcnow()
-    active_budgets = get_active_budgets_by_category(db, ledger_id, category, current_date)
+    active_budgets = get_active_budgets_by_category(db, ledger_id, billDate)
     
     for budget in active_budgets:
         budget.spent += amount
-        budget.updated_at = current_date
         
         # 检查是否需要创建提醒
         check_and_create_alerts(db, budget)
@@ -107,7 +119,6 @@ def recalculate_budget_spent(db: Session, budget_id: int):
     total_spent = db.query(func.sum(Bill.amount)).filter(
         and_(
             Bill.ledger_id == budget.ledger_id,
-            Bill.category == budget.category,
             Bill.type == BillType.EXPENSE,
             Bill.date >= budget.start_date,
             Bill.date <= budget.end_date
@@ -115,7 +126,6 @@ def recalculate_budget_spent(db: Session, budget_id: int):
     ).scalar() or 0.0
     
     budget.spent = total_spent
-    budget.updated_at = datetime.utcnow()
     db.commit()
 
 def get_budget_stats(db: Session, ledger_id: int) -> BudgetStats:

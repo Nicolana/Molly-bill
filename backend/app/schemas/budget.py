@@ -7,7 +7,6 @@ from app.models.enums import BudgetPeriodType, BudgetStatus, AlertType
 class BudgetBase(BaseModel):
     name: str = Field(..., description="预算名称")
     amount: float = Field(..., gt=0, description="预算金额")
-    category: Optional[str] = Field(None, description="预算分类")
     period_type: BudgetPeriodType = Field(..., description="周期类型")
     start_date: datetime = Field(..., description="开始日期")
     end_date: datetime = Field(..., description="结束日期")
@@ -15,13 +14,13 @@ class BudgetBase(BaseModel):
 
 # 创建预算请求模型
 class BudgetCreate(BudgetBase):
+    spent: Optional[float] = Field(0.0, description="已花费金额")
     ledger_id: int = Field(..., description="账本ID")
 
 # 更新预算请求模型
 class BudgetUpdate(BaseModel):
     name: Optional[str] = Field(None, description="预算名称")
     amount: Optional[float] = Field(None, gt=0, description="预算金额")
-    category: Optional[str] = Field(None, description="预算分类")
     period_type: Optional[BudgetPeriodType] = Field(None, description="周期类型")
     start_date: Optional[datetime] = Field(None, description="开始日期")
     end_date: Optional[datetime] = Field(None, description="结束日期")
