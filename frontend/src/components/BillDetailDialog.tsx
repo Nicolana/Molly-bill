@@ -30,6 +30,7 @@ import {
   X
 } from 'lucide-react';
 import dayjs from 'dayjs';
+import { billsAPI } from '@/lib/api';
 
 interface BillDetailDialogProps {
   open: boolean;
@@ -117,6 +118,8 @@ export default function BillDetailDialog({ open, onClose, bill, onUpdate, onDele
       try {
         setLoading(true);
         setError('');
+        const response = await billsAPI.deleteBill(bill.id);
+        console.log(response);
         if (onDelete) {
           await onDelete(bill.id);
         }
