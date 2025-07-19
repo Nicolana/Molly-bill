@@ -25,9 +25,9 @@ def get_chat_messages(db: Session, ledger_id: int, skip: int = 0, limit: int = 1
         ChatMessage.ledger_id == ledger_id
     ).order_by(ChatMessage.timestamp.desc()).offset(skip).limit(limit).all()
 
-def get_chat_messages_count(db: Session, ledger_id: int):
+def get_chat_messages_count(db: Session, user_id: int, ledger_id: int):
     """获取账本聊天消息总数"""
-    return db.query(ChatMessage).filter(ChatMessage.ledger_id == ledger_id).count()
+    return db.query(ChatMessage).filter(ChatMessage.ledger_id == ledger_id, ChatMessage.user_id == user_id).count()
 
 def create_message_bill_association(db: Session, message_id: int, bill_id: int, confidence: Optional[float] = None):
     """创建消息和账单的关联"""
@@ -77,11 +77,12 @@ def delete_chat_message(db: Session, message_id: int, user_id: int):
         return True
     return False
 
-def get_recent_chat_messages(db: Session, ledger_id: int, limit: int = 50):
+def get_recent_chat_messages(db: Session, ledger_id: int, user_id: int, skip: int = 0, limit: int = 50):
     """获取账本最近的聊天消息（按时间正序），包含关联的账单信息"""
     return db.query(ChatMessage).filter(
-        ChatMessage.ledger_id == ledger_id
-    ).order_by(ChatMessage.timestamp.desc()).limit(limit).all()
+        ChatMessage.ledger_id == ledger_id,
+        ChatMessage.user_id == user_id, 
+    ).order_by(ChatMessage.timestamp.desc()).offset(skip).limit(limit).all()
 
 def get_message_bills(db: Session, message_id: int):
     """获取消息关联的所有账单"""

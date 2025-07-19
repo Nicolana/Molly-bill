@@ -12,7 +12,7 @@ from app.core.security.auth import get_current_user
 from app.services.ai.service import ai_service
 from app.crud import chat as chat_crud
 from app.crud import bill as bill_crud
-from app.utils.response import BaseResponse, success_response, error_response
+from app.utils.response import BaseResponse, paginated_response, success_response, error_response
 
 router = APIRouter()
 
@@ -157,7 +157,8 @@ async def get_chat_history(
 ):
     """获取聊天历史"""
     try:
-        messages = chat_crud.get_recent_chat_messages(db, ledger_id, limit)
+        messages = chat_crud.get_recent_chat_messages(db, ledger_id, current_user.id, skip, limit)
+        total = chat_crud.get_chat_messages_count(db, current_user.id, ledger_id)
 
         # 构建响应数据，包含账单详情
         response_data = []
@@ -180,6 +181,7 @@ async def get_chat_history(
 
             response_data.append(message_data)
 
-        return success_response(response_data)
+        # return success_response(response_data)
+        return paginated_response(response_data, total, skip, limit)
     except Exception as e:
         return error_response(f"获取聊天历史失败: {str(e)}")

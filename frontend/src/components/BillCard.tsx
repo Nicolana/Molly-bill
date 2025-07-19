@@ -54,8 +54,7 @@ const categoryIcons: Record<string, React.ComponentType<any>> = {
   '其他': DollarSign
 };
 
-export default function BillCard({ bill, index, showRecordLabel = true, onUpdate, onDelete }: BillCardProps) {
-  console.log(index);
+export default function BillCard({ bill, showRecordLabel = true, onUpdate, onDelete }: BillCardProps) {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const IconComponent = categoryIcons[bill.category || '其他'] || DollarSign;
   

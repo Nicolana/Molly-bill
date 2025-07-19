@@ -8,11 +8,20 @@ import { ChatMessage, BillCreate, Bill } from '@/types';
 import { aiAPI, billsAPI } from '@/lib/api';
 import { Mic, MicOff, Camera, Send, Loader2, Trash2, ChevronUp } from 'lucide-react';
 import BillCard from './BillCard';
+import { toast } from 'sonner';
 
 interface ChatInterfaceProps {
   onBillsCreated?: (bills: Bill[]) => void;
   selectedLedgerId?: number;
 }
+
+type Pagination = {
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+const INITIAL_PAGE_SIZE = 20; // 每页加载的消息数量
 
 export default function ChatInterface({ onBillsCreated, selectedLedgerId }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -25,6 +34,11 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   const [currentPage, setCurrentPage] = useState(0);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [pagination, setPagination] = useState<Pagination>({
+    total: 0,
+    skip: 0,
+    limit: INITIAL_PAGE_SIZE
+  })
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -32,7 +46,6 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   const lastSelectedLedgerId = useRef<number | undefined>(undefined);
   const isInitialLoad = useRef(true);
 
-  const PAGE_SIZE = 20; // 每页加载的消息数量
 
   // 加载历史聊天记录
   const loadChatHistory = useCallback(async (page: number = 0, append: boolean = false) => {
@@ -45,17 +58,22 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
         setIsLoadingMore(true);
       }
 
-      const skip = page * PAGE_SIZE;
-      const response = await aiAPI.getChatHistory(selectedLedgerId, skip, PAGE_SIZE);
+      const skip = page * pagination.limit;
+      const response = await aiAPI.getChatHistory(selectedLedgerId, skip, pagination.limit);
       
       if (!response.data?.success) {
-        throw new Error(response.data?.message || '加载聊天历史失败');
+        toast.error(response.data?.message || '加载聊天历史失败');
+        return;
       }
       
       const dbMessages = response.data.data || [];
+      setPagination(prev => ({
+        ...prev,
+        total: response.data.total,
+      }));
       
-      // 检查是否还有更多消息
-      setHasMoreMessages(dbMessages.length === PAGE_SIZE);
+      // 检查是否还有更多消息ı
+      setHasMoreMessages(dbMessages.length === pagination.limit);
       
       // 转换数据库消息格式为前端格式
       const convertedMessages: ChatMessage[] = dbMessages.map((dbMsg: any) => ({
@@ -72,11 +90,7 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
       } else {
         // 替换所有消息
         setMessages(convertedMessages.reverse());
-        isInitialLoad.current = false;
-        // 初始加载完成后滚动到底部
-        requestAnimationFrame(() => {
-          initializeScrollPosition();
-        });
+        // isInitialLoad.current = false;
       }
     } catch (error) {
       console.error('加载聊天历史失败:', error);
@@ -89,6 +103,8 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   // 加载更多历史消息
   const loadMoreMessages = useCallback(async () => {
     if (!hasMoreMessages || isLoadingMore || !selectedLedgerId) return;
+
+    if (pagination.skip * pagination.limit >= pagination.total) return;
 
     const nextPage = currentPage + 1;
     setCurrentPage(nextPage);
@@ -103,7 +119,7 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
     const { scrollTop, scrollHeight, clientHeight } = container;
     
     // 检查是否滚动到顶部，触发加载更多
-    if (scrollTop <= 100 && hasMoreMessages && !isLoadingMore) {
+    if (scrollTop <= 180 && hasMoreMessages && !isLoadingMore) {
       const previousScrollHeight = scrollHeight;
       loadMoreMessages().then(() => {
         // 保持滚动位置
@@ -116,23 +132,13 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
     }
 
     // 检查是否显示回到底部按钮
-    const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100;
+    const isNearBottom = scrollTop + clientHeight >= scrollHeight - 180;
     setShowScrollToBottom(!isNearBottom);
   }, [hasMoreMessages, isLoadingMore, loadMoreMessages]);
 
   // 自动滚动到底部
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
-
-  // 初始化时设置滚动位置到底部
-  const initializeScrollPosition = useCallback(() => {
-    const messagesContainer = messagesContainerRef.current;
-    if (messagesContainer) {
-      requestAnimationFrame(() => {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      });
-    }
   }, []);
 
   // 监听账本切换
@@ -154,20 +160,20 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
   }, [selectedLedgerId, loadChatHistory]);
 
   // 监听消息变化，自动滚动
-  useEffect(() => {
-    if (messages.length > 0 && !isLoadingHistory && !isInitialLoad.current) {
-      const container = messagesContainerRef.current;
-      if (container) {
-        const { scrollTop, scrollHeight, clientHeight } = container;
-        const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100;
+  // useEffect(() => {
+  //   if (messages.length > 0 && !isLoadingHistory && !isInitialLoad.current) {
+  //     const container = messagesContainerRef.current;
+  //     if (container) {
+  //       const { scrollTop, scrollHeight, clientHeight } = container;
+  //       const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100;
         
-        // 只有在接近底部时才自动滚动
-        if (isNearBottom) {
-          scrollToBottom();
-        }
-      }
-    }
-  }, [messages, isLoadingHistory, scrollToBottom]);
+  //       // 只有在接近底部时才自动滚动
+  //       if (isNearBottom) {
+  //         scrollToBottom();
+  //       }
+  //     }
+  //   }
+  // }, [messages, isLoadingHistory, scrollToBottom]);
 
   // 设置滚动监听
   useEffect(() => {
@@ -177,6 +183,18 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
       return () => container.removeEventListener('scroll', handleScroll);
     }
   }, [handleScroll]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (
+      container &&
+      !isLoadingHistory &&
+      messages.length > 0 && isInitialLoad.current
+    ) {
+      container.scrollTop = container.scrollHeight;
+      isInitialLoad.current = false;
+    }
+  }, [messages, isLoadingHistory]);
 
   // 添加消息到聊天（本地状态）
   const addMessage = useCallback((content: string, type: 'user' | 'assistant', bills?: Bill[] | BillCreate[]) => {
@@ -447,7 +465,8 @@ export default function ChatInterface({ onBillsCreated, selectedLedgerId }: Chat
       {/* 聊天消息区域 */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4 scroll-smooth"
+        className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4 [scrollbar-gutter:stable_both-edges]"
+        id="chatMessageContainer"
       >
         {/* 加载更多历史消息指示器 */}
         {isLoadingMore && (

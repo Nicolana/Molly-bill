@@ -24,9 +24,7 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
-  },
-  // 添加超时设置
-  timeout: 10000,
+  }
 });
 
 // 请求拦截器：添加token
@@ -84,7 +82,7 @@ export const billsAPI = {
 export const chatAPI = {
   // 获取聊天历史
   getChatHistory: (skip: number = 0, limit: number = 50) => 
-    api.get<BaseResponse<PaginatedResponse<DBChatMessage>>>(`/chat/messages?skip=${skip}&limit=${limit}`),
+    api.get<PaginatedResponse<DBChatMessage>>(`/chat/messages?skip=${skip}&limit=${limit}`),
   
   // 获取最近的聊天消息
   getRecentMessages: (limit: number = 50) => 
@@ -102,7 +100,7 @@ export const aiAPI = {
   
   // 获取聊天历史
   getChatHistory: (ledgerId: number, skip: number = 0, limit: number = 50) => 
-    api.get<BaseResponse<DBChatMessage[]>>(`/chat/history/${ledgerId}?skip=${skip}&limit=${limit}`),
+    api.get<PaginatedResponse<DBChatMessage>>(`/chat/history/${ledgerId}?skip=${skip}&limit=${limit}`),
 };
 
 // 账本相关API
