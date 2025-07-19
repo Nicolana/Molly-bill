@@ -45,6 +45,8 @@ async def chat_with_ai(
         # 处理不同类型的输入
         ai_response = None
         bills_created = []
+        bill_ids = []  # 收集创建的账单ID
+
         print(chat_request)
         
         if chat_request.audio:
@@ -77,6 +79,7 @@ async def chat_with_ai(
             ai_response = ai_service.chat(chat_request.message)
         # 如果AI识别出账单信息，创建账单
         if ai_response.get("bills"):
+
             for bill_data in ai_response["bills"]:
                 try:
                     # 处理日期信息
@@ -91,7 +94,7 @@ async def chat_with_ai(
                         except (ValueError, TypeError):
                             # 如果日期解析失败，使用当前日期
                             bill_date = datetime.now()
-                    
+
                     # 创建账单
                     bill_create = BillCreate(
                         amount=bill_data["amount"],
@@ -101,15 +104,11 @@ async def chat_with_ai(
                         date=bill_date,
                         ledger_id=chat_request.ledger_id
                     )
-                    
+
                     bill_db = bill_crud.create_bill(db, bill_create, current_user.id)
                     bills_created.append(bill_db)
-                    
-                    # 更新聊天消息关联账单
-                    chat_crud.update_chat_message_bill(
-                        db, user_msg_db.id, bill_db.id
-                    )
-                    
+                    bill_ids.append(bill_db.id)
+
                 except Exception as e:
                     print(f"创建账单失败: {e}")
                     continue
@@ -121,8 +120,13 @@ async def chat_with_ai(
             input_type="text",
             ledger_id=chat_request.ledger_id
         )
-        chat_crud.create_chat_message(db, ai_message, current_user.id)
-        
+        ai_message_db = chat_crud.create_chat_message(db, ai_message, current_user.id)
+        # 批量创建消息和账单的关联
+        if bill_ids:
+            chat_crud.create_message_bills_associations(
+                db, ai_message_db.id, bill_ids, ai_response.get("confidence")
+            )
+
         # 构建响应
         response_data = {
             "message": ai_response.get("message", "抱歉，我无法理解您的输入。"),
@@ -154,7 +158,7 @@ async def get_chat_history(
     """获取聊天历史"""
     try:
         messages = chat_crud.get_recent_chat_messages(db, ledger_id, limit)
-        
+
         # 构建响应数据，包含账单详情
         response_data = []
         for msg in messages:
@@ -165,19 +169,17 @@ async def get_chat_history(
                 "timestamp": msg.timestamp.isoformat(),
                 "input_type": msg.input_type,
                 "ai_confidence": msg.ai_confidence,
-                "bill_id": msg.bill_id,
                 "is_processed": msg.is_processed,
                 "bills": []  # 初始化账单列表
             }
-            
-            # 如果消息关联了账单，获取账单详情
-            if msg.bill_id:
-                bill = bill_crud.get_bill(db, msg.bill_id)
-                if bill:
-                    message_data["bills"] = [BillResponse.model_validate(bill)]
-            
+
+            # 获取消息关联的所有账单
+            bills = chat_crud.get_message_bills(db, msg.id)
+            if bills:
+                message_data["bills"] = [BillResponse.model_validate(bill) for bill in bills]
+
             response_data.append(message_data)
-        
+
         return success_response(response_data)
     except Exception as e:
-        return error_response(f"获取聊天历史失败: {str(e)}") 
+        return error_response(f"获取聊天历史失败: {str(e)}")

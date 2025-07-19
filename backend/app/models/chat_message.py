@@ -12,9 +12,8 @@ class ChatMessage(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     ledger_id = Column(Integer, ForeignKey("ledgers.id"), nullable=False)  # 所属账本
     
-    # 关联的账单信息（如果消息包含账单）
-    bill_id = Column(Integer, ForeignKey("bills.id"), nullable=True)
-    bill = relationship("Bill")
+    # 关联的账单信息（通过MessageBill中间表）
+    message_bills = relationship("MessageBill", back_populates="message", cascade="all, delete-orphan")
     
     # 消息元数据
     input_type = Column(String, nullable=True)  # 'text', 'voice', 'image'

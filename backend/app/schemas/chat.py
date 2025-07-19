@@ -17,9 +17,9 @@ class ChatMessageResponse(ChatMessageBase):
     timestamp: datetime
     user_id: int
     ledger_id: int
-    bill_id: Optional[int] = None
     is_processed: bool
-    
+    bills: Optional[List[BillResponse]] = None  # 关联的账单列表
+
     model_config = ConfigDict(from_attributes=True)
 
 class ChatHistoryResponse(BaseModel):
@@ -32,8 +32,19 @@ class ChatRequest(BaseModel):
     image: Optional[str] = None  # base64编码的图片
     audio: Optional[str] = None  # base64编码的音频
 
+class MessageBillResponse(BaseModel):
+    """消息-账单关联响应"""
+    id: int
+    message_id: int
+    bill_id: int
+    created_at: datetime
+    confidence: Optional[float] = None
+    bill: Optional[BillResponse] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
 class ChatResponse(BaseModel):
     message: str
     user_id: int
     bills: Optional[List[BillResponse]] = None
-    confidence: Optional[float] = None 
+    confidence: Optional[float] = None

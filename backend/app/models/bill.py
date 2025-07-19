@@ -17,4 +17,5 @@ class Bill(Base):
     
     # 关系
     owner = relationship("User", back_populates="bills")
-    ledger = relationship("Ledger", back_populates="bills") 
+    ledger = relationship("Ledger", back_populates="bills")
+    message_bills = relationship("MessageBill", back_populates="bill", cascade="all, delete-orphan")
