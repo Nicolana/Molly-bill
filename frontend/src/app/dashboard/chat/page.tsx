@@ -14,10 +14,10 @@ export default function ChatPage() {
 
   return (
     <ProtectedRoute>
-      <div className="h-[calc(100vh-65px)] bg-gray-50">
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8 h-full">
+      <div className="h-[calc(100vh-65px-72px)] lg:h-[calc(100vh-65px)] bg-gray-50">
+        <main className="max-w-7xl mx-auto lg:px-4 sm:px-0 lg:px-8 lg:py-8 lg:pb-20 md:pb-8 h-full">
           <div className="space-y-6 h-full">
-            <Card className="h-full">
+            <Card className="h-full lg:rounded-xl rounded-none">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center space-x-2">
