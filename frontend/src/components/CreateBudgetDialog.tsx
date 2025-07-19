@@ -24,7 +24,7 @@ export default function CreateBudgetDialog({
 }: CreateBudgetDialogProps) {
   const [formData, setFormData] = useState<BudgetCreate>({
     name: '',
-    amount: 0,
+    amount: undefined,
     category: '',
     period_type: BudgetPeriodType.MONTHLY,
     start_date: new Date().toISOString().split('T')[0],
@@ -176,7 +176,7 @@ export default function CreateBudgetDialog({
                     id="amount"
                     type="number"
                     value={formData.amount}
-                    onChange={(e) => handleInputChange('amount', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleInputChange('amount', parseFloat(e.target.value))}
                     placeholder="0.00"
                     className={`pl-10 ${errors.amount ? 'border-red-500' : ''}`}
                     min="0"

@@ -78,12 +78,11 @@ def delete_bill(db: Session, bill_id: int, user_id: int):
     if bill:
         # 保存账单信息用于重新计算预算
         ledger_id = bill.ledger_id
-        category = bill.category
         
         db.delete(bill)
         db.commit()
         
-        budgets = get_active_budgets_by_category(db, ledger_id, category, bill.date)
+        budgets = get_active_budgets_by_category(db, ledger_id, bill.date)
         for budget in budgets:
             recalculate_budget_spent(db, budget.id)
         
