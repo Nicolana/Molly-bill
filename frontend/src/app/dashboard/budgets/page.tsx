@@ -124,7 +124,7 @@ export default function BudgetsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 pb-20 md:pb-6 space-y-6">
       {/* 页面标题 */}
       <div className="flex justify-between items-center">
         <div>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, BookOpen, ChevronUp, ChevronDown } from 'lucide-react';
+import { MessageSquare, BookOpen } from 'lucide-react';
 import { Bill } from '@/types';
 import { billsAPI } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -23,7 +23,6 @@ export default function DashboardPage() {
   const [previousBills, setPreviousBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
   const [, setError] = useState('');
-  const [isChatExpanded, setIsChatExpanded] = useState(true);
   
   // 时间控制器状态
   const [timeState, setTimeState] = useState<TimeControllerState>({
@@ -207,12 +206,12 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 移动端布局 */}
+        {/* 移动端布局 - 仅显示统计面板 */}
         <div className="lg:hidden">
-          <div className="pb-40 space-y-4">
+          <div className="pb-20 space-y-4">
             {/* 时间控制器 - 移动端 */}
             <div className="p-4">
-              <TimeController 
+              <TimeController
                 value={timeState}
                 onChange={handleTimeStateChange}
               />
@@ -220,7 +219,7 @@ export default function DashboardPage() {
 
             {/* 总览统计面板 - 移动端 */}
             <div className="px-4">
-              <OverviewPanel 
+              <OverviewPanel
                 bills={bills}
                 previousBills={previousBills}
                 timeRange={timeState.range}
@@ -229,7 +228,7 @@ export default function DashboardPage() {
 
             {/* 分析面板 - 移动端 */}
             <div className="px-4">
-              <AnalyticsPanel 
+              <AnalyticsPanel
                 bills={bills}
                 timeRange={timeState.range}
                 quickMode={timeState.quickMode}
@@ -239,39 +238,11 @@ export default function DashboardPage() {
 
             {/* 账单列表 - 移动端 */}
             <div className="px-4">
-              <BillList 
+              <BillList
                 bills={bills}
                 title="选定日期账单"
               />
             </div>
-          </div>
-
-          {/* 移动端固定底部聊天区域 */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
-            <div className="p-4">
-              <Button
-                variant="outline"
-                onClick={() => setIsChatExpanded(!isChatExpanded)}
-                className="w-full flex items-center justify-between"
-              >
-                <div className="flex items-center space-x-2">
-                  <MessageSquare className="h-4 w-4" />
-                  <span>AI记账助手</span>
-                </div>
-                {isChatExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              </Button>
-            </div>
-            
-            {isChatExpanded && (
-              <div className="border-t border-gray-200">
-                <div className="h-80 overflow-hidden">
-                  <ChatInterface 
-                    onBillsCreated={handleBillsCreated} 
-                    selectedLedgerId={currentLedgerId || undefined}
-                  />
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

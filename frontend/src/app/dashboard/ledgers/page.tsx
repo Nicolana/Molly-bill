@@ -160,7 +160,7 @@ export default function LedgersPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gray-50 p-6 pb-20 md:pb-6">
         <div className="max-w-7xl mx-auto">
           {/* 页面标题和操作 */}
           <div className="flex items-center justify-between mb-6">

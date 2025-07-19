@@ -1,17 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { BarChart3, LogOut, Menu, X, BookOpen, Target } from 'lucide-react';
+import { BarChart3, LogOut, BookOpen, Target } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import BottomNavigation from '@/components/BottomNavigation';
 
 export default function TopNavigation() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // 处理登出
   const handleLogout = () => {
@@ -48,7 +48,7 @@ export default function TopNavigation() {
                 className="flex items-center space-x-2"
               >
                 <BarChart3 className="h-4 w-4" />
-                <span>仪表盘</span>
+                <span>统计</span>
               </Button>
             </Link>
             <Link href="/dashboard/ledgers">
@@ -73,66 +73,26 @@ export default function TopNavigation() {
             </Link>
           </nav>
 
-          {/* 右侧：用户操作 */}
-          <div className="flex items-center space-x-2">
+          {/* 右侧：用户操作（仅桌面端显示） */}
+          <div className="hidden md:flex items-center space-x-2">
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">登出</span>
+              <span>登出</span>
             </Button>
-            
-            {/* 移动端菜单按钮 */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </div>
+
+          {/* 移动端右侧：用户邮箱和登出按钮 */}
+          <div className="md:hidden flex items-center space-x-2">
+            <span className="text-sm text-gray-500 truncate max-w-24">{user?.email}</span>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
-
-        {/* 移动端导航菜单 */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 py-4">
-            <div className="flex flex-col space-y-2">
-              <Link href="/dashboard">
-                <Button
-                  variant={isActive('/dashboard') ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center space-x-2 justify-start w-full"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  <span>仪表盘</span>
-                </Button>
-              </Link>
-              <Link href="/dashboard/ledgers">
-                <Button
-                  variant={isActive('/dashboard/ledgers') ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center space-x-2 justify-start w-full"
-                >
-                  <BookOpen className="h-4 w-4" />
-                  <span>账本管理</span>
-                </Button>
-              </Link>
-              <Link href="/dashboard/budgets">
-                <Button
-                  variant={isActive('/dashboard/budgets') ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center space-x-2 justify-start w-full"
-                >
-                  <Target className="h-4 w-4" />
-                  <span>预算管理</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* 底部导航组件 */}
+      <BottomNavigation />
     </header>
   );
-} 
+}
