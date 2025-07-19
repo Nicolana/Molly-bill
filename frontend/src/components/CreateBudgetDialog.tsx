@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Calendar, DollarSign } from 'lucide-react';
+import dayjs from 'dayjs';
+import { da } from 'date-fns/locale';
 
 interface CreateBudgetDialogProps {
   isOpen: boolean;
@@ -104,31 +106,45 @@ export default function CreateBudgetDialog({
   };
 
   const handlePeriodChange = (period: BudgetPeriodType) => {
-    const startDate = new Date();
-    let endDate = new Date();
+    let startDate = dayjs();
+    let endDate = dayjs();
 
     switch (period) {
-      case BudgetPeriodType.MONTHLY:
-        endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+      case BudgetPeriodType.MONTHLY:{
+        const nextMonth = dayjs().startOf('month').add(1, 'month');
+        startDate = nextMonth.startOf('month');
+        endDate = nextMonth.endOf('month');
         break;
-      case BudgetPeriodType.WEEKLY:
-        endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      }
+      case BudgetPeriodType.WEEKLY: {
+        const nextWeek = dayjs().startOf('week').add(1, 'week');
+        startDate = nextWeek.startOf('week').add(1, 'day');
+        endDate = nextWeek.endOf('week').add(1, 'day');
         break;
-      case BudgetPeriodType.QUARTERLY:
-        endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 3, 0);
+      }
+      case BudgetPeriodType.QUARTERLY:{
+        const nextQuarter = dayjs().add(1, 'quarter');
+        startDate = nextQuarter.startOf('quarter');
+        endDate = nextQuarter.endOf('quarter');
         break;
-      case BudgetPeriodType.YEARLY:
-        endDate = new Date(startDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate());
+      }
+      case BudgetPeriodType.YEARLY: {
+        const nextYear = dayjs().add(1, 'year');
+        startDate = nextYear.startOf('year');
+        endDate = nextYear.endOf('year');
         break;
+      }
       default:
-        endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        startDate = dayjs().startOf('month').add(1, 'month').startOf('month');
+        endDate = dayjs().startOf('month').add(1, 'month').endOf('month');
+        break;
     }
 
     setFormData(prev => ({
       ...prev,
       period_type: period,
-      start_date: startDate.toISOString().split('T')[0],
-      end_date: endDate.toISOString().split('T')[0],
+      start_date: startDate.format('YYYY-MM-DD'),
+      end_date: endDate.format('YYYY-MM-DD'),
     }));
   };
 
@@ -201,10 +217,10 @@ export default function CreateBudgetDialog({
                       onClick={() => handlePeriodChange(period)}
                       className="text-sm"
                     >
-                      {period === BudgetPeriodType.MONTHLY && '月'}
-                      {period === BudgetPeriodType.WEEKLY && '周'}
-                      {period === BudgetPeriodType.QUARTERLY && '季'}
-                      {period === BudgetPeriodType.YEARLY && '年'}
+                      {period === BudgetPeriodType.WEEKLY && '下周'}
+                      {period === BudgetPeriodType.MONTHLY && '下个月'}
+                      {period === BudgetPeriodType.QUARTERLY && '下个季度'}
+                      {period === BudgetPeriodType.YEARLY && '下一年'}
                       {period === BudgetPeriodType.CUSTOM && '自定义'}
                     </Button>
                   ))}
