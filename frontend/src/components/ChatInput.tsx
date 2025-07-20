@@ -549,7 +549,7 @@ export default function ChatInput({
               onMouseUp={handlePressEnd}
               onMouseMove={handlePressMove}
               onMouseLeave={handlePressEnd}
-              onTouchStart={handlePressStart}
+              onTouchStart={handlePressStart} 
               onTouchEnd={handlePressEnd}
               onTouchCancel={handlePressEnd}
               onTouchMove={handlePressMove}
@@ -587,7 +587,15 @@ export default function ChatInput({
           </div>
         ) : (
           /* 文本模式界面 */
-          <div className="flex items-center space-x-2">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }}
+            autoComplete="off"
+            noValidate
+          >
+            <div className="flex items-center space-x-2">
             {/* 语音模式切换按钮 */}
             <Button
               variant="outline"
@@ -620,6 +628,16 @@ export default function ChatInput({
               placeholder={placeholder}
               className="flex-1 text-sm h-12 px-4"
               disabled={isLoading || disabled}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              data-form-type="other"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              name="chat-input"
+              role="textbox"
+              aria-autocomplete="none"
             />
 
             {/* 发送按钮 */}
@@ -636,7 +654,8 @@ export default function ChatInput({
               )}
               <span className="hidden sm:inline ml-1">发送</span>
             </Button>
-          </div>
+            </div>
+          </form>
         )}
       </div>
 

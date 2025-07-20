@@ -19,6 +19,11 @@ export const metadata: Metadata = {
     type: "website",
     locale: "zh_CN",
   },
+  other: {
+    // 禁用浏览器的自动完成和表单填充
+    'autocomplete': 'off',
+    'form-detection': 'telephone=no,address=no,email=no',
+  },
 };
 
 export const viewport = {
@@ -46,7 +51,7 @@ export default function RootLayout({
             {children}
           </AuthProvider>
         </ErrorBoundary>
-        <Toaster 
+        <Toaster
           position="top-right"
           richColors
           closeButton
