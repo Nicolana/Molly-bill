@@ -35,7 +35,7 @@ export default function ChatInput({
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
   const [cancelZoneActive, setCancelZoneActive] = useState(false);
   const [waveformKey, setWaveformKey] = useState(0);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [, setKeyboardHeight] = useState(0);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);

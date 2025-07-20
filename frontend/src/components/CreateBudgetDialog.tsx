@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Calendar, DollarSign } from 'lucide-react';
 import dayjs from 'dayjs';
-import { da } from 'date-fns/locale';
 
 interface CreateBudgetDialogProps {
   isOpen: boolean;
