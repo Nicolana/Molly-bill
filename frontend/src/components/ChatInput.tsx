@@ -35,6 +35,8 @@ export default function ChatInput({
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
   const [cancelZoneActive, setCancelZoneActive] = useState(false);
   const [waveformKey, setWaveformKey] = useState(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recordingStartTime = useRef<number>(0);
@@ -43,6 +45,75 @@ export default function ChatInput({
   const shouldCancelRecording = useRef<boolean>(false);
   const pressStartTime = useRef<number>(0);
   const shortPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const initialViewportHeight = useRef<number>(0);
+
+  // 键盘检测和视口高度监听
+  useEffect(() => {
+    // 记录初始视口高度
+    initialViewportHeight.current = window.visualViewport?.height || window.innerHeight;
+
+    const handleViewportChange = () => {
+      const currentHeight = window.visualViewport?.height || window.innerHeight;
+      const heightDiff = initialViewportHeight.current - currentHeight;
+
+      // 如果高度差超过150px，认为键盘弹出
+      if (heightDiff > 150) {
+        setIsKeyboardVisible(true);
+        setKeyboardHeight(heightDiff);
+        // 添加body类来防止背景滚动
+        document.body.classList.add('keyboard-visible');
+      } else {
+        setIsKeyboardVisible(false);
+        setKeyboardHeight(0);
+        // 移除body类
+        document.body.classList.remove('keyboard-visible');
+      }
+    };
+
+    // 监听视口变化
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportChange);
+    } else {
+      // 降级方案：监听窗口大小变化
+      window.addEventListener('resize', handleViewportChange);
+    }
+
+    // 监听输入框焦点事件
+    const handleFocusIn = (e: FocusEvent) => {
+      // 只对输入元素响应
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        // 延迟检测，等待键盘动画完成
+        setTimeout(handleViewportChange, 300);
+      }
+    };
+
+    const handleFocusOut = (e: FocusEvent) => {
+      // 只对输入元素响应
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        // 延迟重置，等待键盘收起动画完成
+        setTimeout(() => {
+          setIsKeyboardVisible(false);
+          setKeyboardHeight(0);
+          document.body.classList.remove('keyboard-visible');
+        }, 300);
+      }
+    };
+
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleViewportChange);
+      } else {
+        window.removeEventListener('resize', handleViewportChange);
+      }
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
+      // 清理body类
+      document.body.classList.remove('keyboard-visible');
+    };
+  }, []);
 
   // 发送文本消息
   const handleSendMessage = useCallback(() => {
@@ -384,6 +455,16 @@ export default function ChatInput({
     return bars;
   };
 
+  // 计算动态底部位置
+  const getBottomPosition = () => {
+    if (isKeyboardVisible) {
+      // 键盘弹出时，使用安全区域底部 + 一些额外间距
+      return '20px';
+    }
+    // 默认位置（底部导航栏上方）
+    return '72px';
+  };
+
   return (
     <div className={`border-t bg-white ${isRecording ? 'recording-active' : ''}`}>
       {/* 取消录音提示区域 */}
@@ -422,7 +503,14 @@ export default function ChatInput({
         </div>
       )}
 
-      <div className="p-2 sm:p-4 fixed bottom-[72px] w-full left-0 bg-white">
+      <div
+        className="chat-input-container p-2 sm:p-4 fixed w-full left-0 bg-white transition-all duration-300 ease-in-out z-50"
+        style={{
+          bottom: getBottomPosition(),
+          // 添加安全区域支持
+          paddingBottom: isKeyboardVisible ? 'env(safe-area-inset-bottom, 0px)' : '0px'
+        }}
+      >
         {isVoiceMode ? (
           /* 语音模式界面 */
           <div className="flex items-center space-x-2">

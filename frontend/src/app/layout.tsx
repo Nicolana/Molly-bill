@@ -26,6 +26,10 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  // 支持动态视口高度，改善键盘弹出体验
+  viewportFit: "cover",
+  // 防止iOS Safari在键盘弹出时缩放
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

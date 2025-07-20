@@ -186,3 +186,43 @@
 .cancel-zone-active {
   animation: cancel-zone-appear 0.2s ease-out;
 }
+
+/* 键盘弹出时的样式优化 */
+.keyboard-visible {
+  /* 防止背景滚动 */
+  overflow: hidden;
+  /* 确保页面高度适应键盘 */
+  height: 100vh;
+  height: 100dvh; /* 动态视口高度 */
+}
+
+/* iOS Safari 键盘优化 */
+@supports (-webkit-touch-callout: none) {
+  .keyboard-visible {
+    /* iOS Safari 特殊处理 */
+    position: fixed;
+    width: 100%;
+  }
+}
+
+/* 输入框聚焦时的样式 */
+input:focus,
+textarea:focus {
+  /* 防止页面缩放 */
+  transform: translateZ(0);
+  /* 确保输入框可见 */
+  scroll-margin-bottom: 20px;
+}
+
+/* 移动端视口优化 */
+@media screen and (max-width: 768px) {
+  /* 确保在键盘弹出时内容不被遮挡 */
+  .keyboard-visible .chat-container {
+    padding-bottom: 20px;
+  }
+
+  /* 输入框容器的过渡动画 */
+  .chat-input-container {
+    transition: bottom 0.3s ease-in-out;
+  }
+}
