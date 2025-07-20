@@ -504,7 +504,7 @@ export default function ChatInput({
       )}
 
       <div
-        className="chat-input-container p-2 sm:p-4 fixed w-full left-0 bg-white transition-all duration-300 ease-in-out z-50"
+        className="chat-input-container p-2 sm:p-4 fixed w-full left-0 bg-white lg:relative lg:bottom-0! lg:w-auto transition-all duration-300 ease-in-out z-50"
         style={{
           bottom: getBottomPosition(),
           // 添加安全区域支持
