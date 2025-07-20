@@ -432,9 +432,9 @@ export default function ChatInput({
               size="sm"
               onClick={toggleVoiceMode}
               disabled={isLoading || disabled || isRecording}
-              className="flex-shrink-0 h-10 w-10 p-2"
+              className="flex-shrink-0 h-12 w-12 p-2"
             >
-              <Keyboard className="h-4 w-4" />
+              <Keyboard className="h-5 w-5" />
             </Button>
 
             {/* 图片上传按钮 */}
@@ -443,14 +443,14 @@ export default function ChatInput({
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading || disabled || isRecording}
-              className="flex-shrink-0 h-10 w-10 p-2"
+              className="flex-shrink-0 h-12 w-12 p-2"
             >
-              <Camera className="h-4 w-4" />
+              <Camera className="h-5 w-5" />
             </Button>
 
             {/* 语音录制按钮 - 占据大部分空间 */}
             <div
-              className={`flex-1 h-12 rounded-lg border-2 border-dashed transition-all duration-200 select-none voice-input-area ${
+              className={`flex-1 h-14 rounded-lg border-2 border-dashed transition-all duration-200 select-none voice-input-area ${
                 isRecording
                   ? cancelZoneActive
                     ? 'bg-red-500 border-red-600 text-white'
@@ -499,16 +499,16 @@ export default function ChatInput({
           </div>
         ) : (
           /* 文本模式界面 */
-          <div className="flex items-center space-x-1 sm:space-x-2">
+          <div className="flex items-center space-x-2">
             {/* 语音模式切换按钮 */}
             <Button
               variant="outline"
               size="sm"
               onClick={toggleVoiceMode}
               disabled={isLoading || disabled}
-              className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3"
+              className="flex-shrink-0 h-12 w-12 sm:h-12 sm:w-auto p-2 sm:px-4"
             >
-              <Mic className="h-3 w-3 sm:h-4 sm:w-4" />
+              <Mic className="h-5 w-5" />
               <span className="hidden sm:inline ml-1">语音</span>
             </Button>
 
@@ -518,9 +518,9 @@ export default function ChatInput({
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading || disabled}
-              className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3"
+              className="flex-shrink-0 h-12 w-12 sm:h-12 sm:w-auto p-2 sm:px-4"
             >
-              <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
+              <Camera className="h-5 w-5" />
               <span className="hidden sm:inline ml-1">图片</span>
             </Button>
 
@@ -530,7 +530,7 @@ export default function ChatInput({
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
-              className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
+              className="flex-1 text-sm h-12 px-4"
               disabled={isLoading || disabled}
             />
 
@@ -539,12 +539,12 @@ export default function ChatInput({
               onClick={handleSendMessage}
               disabled={!inputValue.trim() || isLoading || disabled}
               size="sm"
-              className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3"
+              className="flex-shrink-0 h-12 w-12 sm:h-12 sm:w-auto p-2 sm:px-4"
             >
               {isLoading ? (
-                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+                <Send className="h-5 w-5" />
               )}
               <span className="hidden sm:inline ml-1">发送</span>
             </Button>
