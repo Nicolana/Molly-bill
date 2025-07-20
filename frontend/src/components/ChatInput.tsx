@@ -422,7 +422,7 @@ export default function ChatInput({
         </div>
       )}
 
-      <div className="p-2 sm:p-4">
+      <div className="p-2 sm:p-4 fixed bottom-[72px] w-full left-0 bg-white">
         {isVoiceMode ? (
           /* 语音模式界面 */
           <div className="flex items-center space-x-2">

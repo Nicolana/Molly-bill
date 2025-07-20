@@ -196,44 +196,7 @@ class AIService:
             image.save(buffered, format="JPEG")
             img_base64 = base64.b64encode(buffered.getvalue()).decode()
             
-            current_date = datetime.now().strftime("%Y年%m月%d日")
-            current_time = datetime.now().strftime("%H:%M")
-            
-            prompt = f"""
-            请分析这张图片中的财务信息，提取金额、商家名称、商品描述、日期等信息，并判断是收入还是支出。
-            
-            当前日期：{current_date}
-            当前时间：{current_time}
-            
-            判断规则：
-            1. 支出：收据、发票、消费小票、付款凭证等
-            2. 收入：工资条、奖金单、报销单、收款凭证等
-            3. 日期识别：
-               - 优先识别图片中的日期信息（如收据上的日期）
-               - 如果图片中没有明确日期，使用当前日期
-               - 日期格式统一返回为：YYYY-MM-DD
-            
-            如果包含财务信息，请以JSON格式返回，格式如下：
-            {{
-                "has_bill": true,
-                "bills": [
-                    {{
-                        "amount": 金额,
-                        "type": "expense" 或 "income",
-                        "description": "描述",
-                        "category": "分类",
-                        "date": "YYYY-MM-DD格式的日期"
-                    }}
-                ],
-                "message": "我识别出了以下财务信息："
-            }}
-            
-            如果没有财务信息，返回：
-            {{
-                "has_bill": false,
-                "message": "抱歉，我没有从图片中识别出财务信息。"
-            }}
-            """
+            prompt = "请分析这张图片中文本内容"
             
             response = MultiModalConversation.call(
                 model=self.model,

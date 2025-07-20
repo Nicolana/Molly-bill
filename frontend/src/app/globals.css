@@ -116,24 +116,6 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-    /* 禁用缩放和触摸操作 */
-    touch-action: manipulation;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* 禁用双击缩放 */
-  html, body {
-    touch-action: manipulation;
-    -ms-touch-action: manipulation;
-  }
 }
 
 /* Toast 动画 */
@@ -183,24 +165,10 @@
 
 /* 移动端触摸优化 */
 @media (max-width: 768px) {
-  .voice-input-area {
-    -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-  }
 
   .voice-recording-button {
     min-height: 48px; /* 确保触摸目标足够大 */
   }
-}
-
-/* 防止在录音时意外选择文本 */
-.recording-active {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
 }
 
 /* 取消区域动画 */
