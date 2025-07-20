@@ -279,8 +279,37 @@ class AIService:
         """语音识别 - 使用阿里云NLS服务"""
         try:
             # 使用阿里云NLS服务进行语音识别
-            result = aliyun_nls_service.recognize_voice(audio_data)
-            return result
+            # result = aliyun_nls_service.recognize_voice(audio_data)
+            messages = [
+                {
+                    "role": "system",
+                    "content": [{"text": "You are a helpful assistant."}]},
+                {
+                    "role": "user",
+                    "content": [{"audio":f"data:audio/mp3;base64,{audio_data}"},
+                                {"text": "音频里在说什么? "}],
+                }
+            ]
+
+            response = dashscope.MultiModalConversation.call(
+                model="qwen-audio-turbo-latest", 
+                messages=messages,
+                result_format="message"
+            )
+
+            if response.status_code != 200:
+                return {
+                    "success": False,
+                    "text": "",
+                    "message": "语音识别失败"
+                }
+
+            return {
+                "success": True,
+                "text": response.output.choices[0].message.content[0],
+                "confidence": 0.9,
+                "message": "语音识别成功"
+            }
         except Exception as e:
             print(f"语音识别错误: {e}")
             return {
