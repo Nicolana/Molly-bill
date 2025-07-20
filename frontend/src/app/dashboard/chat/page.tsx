@@ -38,7 +38,7 @@ export default function ChatPage() {
                   </Link>
                 </div>
               </CardHeader>
-              <CardContent className="h-full lg:h-[calc(100%-80px)] p-0">
+              <CardContent className="h-[calc(100%-56px)] lg:h-[calc(100%-80px)] p-0">
                 <ChatInterface
                   selectedLedgerId={currentLedgerId || undefined}
                 />

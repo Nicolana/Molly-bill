@@ -626,7 +626,10 @@ export default function ChatInput({
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
-              className="flex-1 text-sm h-12 px-4"
+              className="flex-1 text-sm h-12 px-4 outline-none"
+              style={{
+                boxShadow: 'none'
+              }}
               disabled={isLoading || disabled}
               autoComplete="off"
               autoCorrect="off"
