@@ -5,6 +5,7 @@ import base64
 import tempfile
 import os
 from typing import Dict, Any
+from pydub import AudioSegment
 from app.core.config.settings import settings
 
 
@@ -38,20 +39,18 @@ class AliyunNLSService:
             
             # 解码base64音频数据
             audio_bytes = base64.b64decode(audio_data)
-            
-            # 创建临时文件保存音频
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
-                temp_file.write(audio_bytes)
-                temp_audio_path = temp_file.name
+
+            # 转换音频格式为PCM WAV
+            converted_audio_path = self._convert_audio_to_pcm(audio_bytes)
             
             try:
                 # 调用阿里云NLS API
-                result = self._process_audio(temp_audio_path)
+                result = self._process_audio(converted_audio_path)
                 return result
             finally:
                 # 清理临时文件
-                if os.path.exists(temp_audio_path):
-                    os.remove(temp_audio_path)
+                if os.path.exists(converted_audio_path):
+                    os.remove(converted_audio_path)
                     
         except Exception as e:
             print(f"语音识别错误: {e}")
@@ -60,7 +59,55 @@ class AliyunNLSService:
                 "text": "",
                 "message": f"语音识别服务异常: {str(e)}"
             }
-    
+
+    def _convert_audio_to_pcm(self, audio_bytes: bytes) -> str:
+        """
+        将音频数据转换为WAV格式
+
+        Args:
+            audio_bytes: 原始音频数据
+
+        Returns:
+            str: 转换后的WAV文件路径
+        """
+        try:
+            # 创建临时文件保存原始音频
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.webm') as temp_input:
+                temp_input.write(audio_bytes)
+                temp_input_path = temp_input.name
+
+            # 创建输出文件路径
+            temp_output_path = temp_input_path.replace('.webm', '_converted.wav')
+
+            try:
+                # 使用pydub加载音频（自动检测格式）
+                audio = AudioSegment.from_file(temp_input_path)
+
+                # 转换为16kHz单声道PCM WAV
+                audio = audio.set_frame_rate(16000).set_channels(1)
+
+                # 导出为WAV格式
+                audio.export(temp_output_path, format="wav")
+                with open('test_audio.wav', 'wb') as f:
+                    f.write(audio.export(format="wav").read())
+
+                print(f"音频转换成功: {temp_input_path} -> {temp_output_path}")
+                print(f"转换后音频信息: 采样率={audio.frame_rate}Hz, 声道数={audio.channels}, 时长={len(audio)}ms")
+
+                return temp_output_path
+
+            finally:
+                # 清理输入临时文件
+                if os.path.exists(temp_input_path):
+                    os.remove(temp_input_path)
+
+        except Exception as e:
+            print(f"音频转换失败: {e}")
+            # 如果转换失败，尝试直接保存为WAV文件
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
+                temp_file.write(audio_bytes)
+                return temp_file.name
+
     def _process_audio(self, audio_file_path: str) -> Dict[str, Any]:
         """
         处理音频文件，调用阿里云NLS API
@@ -91,7 +138,7 @@ class AliyunNLSService:
             
             # 发送POST请求
             conn.request(
-                method='POST', 
+                method='POST',
                 url=request_url, 
                 body=audio_content, 
                 headers=http_headers
@@ -121,7 +168,7 @@ class AliyunNLSService:
         # 基础参数
         params = {
             'appkey': self.app_key,
-            'format': 'pcm',
+            'format': 'WAV',
             'sample_rate': '16000',
             'enable_punctuation_prediction': 'true',
             'enable_inverse_text_normalization': 'true',

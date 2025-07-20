@@ -40,6 +40,9 @@ export default function ChatInput({
   const recordingStartTime = useRef<number>(0);
   const initialTouchPosition = useRef({ x: 0, y: 0 });
   const waveformTimer = useRef<NodeJS.Timeout | null>(null);
+  const shouldCancelRecording = useRef<boolean>(false);
+  const pressStartTime = useRef<number>(0);
+  const shortPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   // 发送文本消息
   const handleSendMessage = useCallback(() => {
@@ -62,39 +65,74 @@ export default function ChatInput({
     if (disabled) return;
 
     try {
+      // 重置取消标志
+      shouldCancelRecording.current = false;
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+
+      // 检查支持的音频格式
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/mp4';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = ''; // 使用默认格式
+          }
+        }
+      }
+
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       const audioChunks: Blob[] = [];
 
+      console.log('使用音频格式:', mimeType || '默认格式');
+
       recorder.ondataavailable = (event) => {
+        console.log('收到音频数据块:', event.data.size, 'bytes');
         audioChunks.push(event.data);
       };
 
       recorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        // 使用录制时的实际格式
+        const audioBlob = new Blob(audioChunks, { type: recorder.mimeType });
         const currentRecordingTime = Math.floor((Date.now() - recordingStartTime.current) / 1000);
+
+        console.log('录音停止', {
+          currentRecordingTime,
+          shouldCancel: shouldCancelRecording.current,
+          blobSize: audioBlob.size,
+          mimeType: audioBlob.type
+        });
 
         // 检查录音时长，太短的录音不处理
         if (currentRecordingTime < 1) {
           toast.info('录音时间太短，至少需要1秒');
+          // 清理资源
+          stream.getTracks().forEach(track => track.stop());
           return;
         }
 
         // 如果不是取消操作，则处理音频
-        if (!isDragging) {
+        if (!shouldCancelRecording.current) {
+          console.log('处理音频数据');
           const reader = new FileReader();
           reader.onload = async () => {
             const base64Audio = (reader.result as string).split(',')[1];
             onVoiceInput(base64Audio);
           };
           reader.readAsDataURL(audioBlob);
+        } else {
+          console.log('录音已取消，不处理音频');
         }
 
         // 清理资源
         stream.getTracks().forEach(track => track.stop());
+        // 重置取消标志
+        shouldCancelRecording.current = false;
       };
 
-      recorder.start();
+      // 开始录音，设置时间片为100ms以确保有足够的数据
+      recorder.start(100);
       setMediaRecorder(recorder);
       setIsRecording(true);
       recordingStartTime.current = Date.now();
@@ -122,10 +160,13 @@ export default function ChatInput({
   // 停止录音
   const stopRecording = useCallback(() => {
     if (mediaRecorder && isRecording) {
+      console.log('停止录音 - 将发送音频');
+      shouldCancelRecording.current = false; // 确保不取消
       mediaRecorder.stop();
       setIsRecording(false);
       setRecordingTime(0);
 
+      // 清理定时器
       if (recordingTimer) {
         clearInterval(recordingTimer);
         setRecordingTimer(null);
@@ -146,17 +187,46 @@ export default function ChatInput({
     }
   }, [recordingTime, isRecording, stopRecording]);
 
+  // 清理所有定时器的函数
+  const cleanupTimers = useCallback(() => {
+    if (shortPressTimer.current) {
+      clearTimeout(shortPressTimer.current);
+      shortPressTimer.current = null;
+    }
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    if (recordingTimer) {
+      clearInterval(recordingTimer);
+      setRecordingTimer(null);
+    }
+    if (waveformTimer.current) {
+      clearInterval(waveformTimer.current);
+      waveformTimer.current = null;
+    }
+  }, [longPressTimer, recordingTimer]);
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      cleanupTimers();
+    };
+  }, [cleanupTimers]);
+
   // 取消录音
   const cancelRecording = useCallback(() => {
     if (mediaRecorder && isRecording) {
+      console.log('取消录音 - 不发送音频');
+      shouldCancelRecording.current = true; // 标记为取消
       mediaRecorder.stop();
-      mediaRecorder.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
       setRecordingTime(0);
       setIsDragging(false);
       setCancelZoneActive(false);
       setDragPosition({ x: 0, y: 0 });
 
+      // 清理定时器
       if (recordingTimer) {
         clearInterval(recordingTimer);
         setRecordingTimer(null);
@@ -191,32 +261,65 @@ export default function ChatInput({
     e.preventDefault();
     const position = getTouchPosition(e);
     initialTouchPosition.current = position;
+    pressStartTime.current = Date.now();
 
-    // 立即开始录音（微信风格）
-    setIsLongPress(true);
-    startRecording();
+    console.log('按下开始'); // 调试日志
+
+    // 设置短按检测定时器（200ms后开始录音）
+    const timer = setTimeout(() => {
+      console.log('长按检测 - 开始录音');
+      setIsLongPress(true);
+      startRecording();
+    }, 200);
+
+    shortPressTimer.current = timer;
   }, [disabled, isLoading, startRecording]);
 
   // 结束按住
   const handlePressEnd = useCallback(() => {
+    const pressDuration = Date.now() - pressStartTime.current;
+    console.log('松开按钮', { pressDuration, isRecording, isDragging, cancelZoneActive }); // 调试日志
+
+    // 清理定时器
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
 
-    if (isLongPress && isRecording) {
+    if (shortPressTimer.current) {
+      clearTimeout(shortPressTimer.current);
+      shortPressTimer.current = null;
+    }
+
+    // 检查是否为短按（少于200ms且未开始录音）
+    if (pressDuration < 200 && !isRecording) {
+      console.log('短按检测 - 忽略操作');
+      toast.info('请长按进行录音');
+      // 重置状态
+      setIsLongPress(false);
+      setIsDragging(false);
+      setCancelZoneActive(false);
+      setDragPosition({ x: 0, y: 0 });
+      return;
+    }
+
+    // 如果正在录音，根据状态决定是停止还是取消
+    if (isRecording) {
       if (isDragging || cancelZoneActive) {
+        console.log('取消录音');
         cancelRecording();
       } else {
+        console.log('停止录音');
         stopRecording();
       }
     }
 
+    // 重置所有状态
     setIsLongPress(false);
     setIsDragging(false);
     setCancelZoneActive(false);
     setDragPosition({ x: 0, y: 0 });
-  }, [longPressTimer, isLongPress, isRecording, isDragging, cancelZoneActive, cancelRecording, stopRecording]);
+  }, [longPressTimer, isRecording, isDragging, cancelZoneActive, cancelRecording, stopRecording]);
 
   // 拖拽处理（支持鼠标和触摸）
   const handlePressMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -360,9 +463,11 @@ export default function ChatInput({
               onMouseLeave={handlePressEnd}
               onTouchStart={handlePressStart}
               onTouchEnd={handlePressEnd}
+              onTouchCancel={handlePressEnd}
               onTouchMove={handlePressMove}
               style={{
-                transform: isRecording ? `translateY(${Math.min(dragPosition.y * 0.1, 0)}px)` : 'none'
+                transform: isRecording ? `translateY(${Math.min(dragPosition.y * 0.1, 0)}px)` : 'none',
+                touchAction: 'none' // 防止浏览器默认的触摸行为
               }}
             >
               <div className="h-full flex items-center justify-center">
@@ -386,7 +491,7 @@ export default function ChatInput({
                 ) : (
                   <div className="flex items-center space-x-2 text-gray-600">
                     <Mic className="h-5 w-5" />
-                    <span className="font-medium">按住 说话</span>
+                    <span className="font-medium">长按 说话</span>
                   </div>
                 )}
               </div>

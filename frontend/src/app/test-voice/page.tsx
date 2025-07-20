@@ -36,9 +36,26 @@ export default function TestVoicePage() {
   };
 
   const handleVoiceInput = (audioData: string) => {
+    console.log('收到语音数据，长度:', audioData.length);
+
+    // 尝试解码base64数据检查大小
+    try {
+      const binaryString = atob(audioData);
+      const audioSize = binaryString.length;
+      console.log('音频数据大小:', audioSize, 'bytes', `(${(audioSize/1024).toFixed(2)} KB)`);
+
+      // 检查是否有实际数据
+      if (audioSize < 1000) {
+        console.warn('音频数据可能太小:', audioSize, 'bytes');
+        toast.warning('录音数据较小，可能录制失败');
+      }
+    } catch (e) {
+      console.error('解码base64数据失败:', e);
+    }
+
     setIsLoading(true);
     toast.info('正在处理语音...');
-    
+
     // 模拟语音识别
     setTimeout(() => {
       const recognizedText = '这是模拟的语音识别结果：今天午餐花了25元';
@@ -130,7 +147,8 @@ export default function TestVoicePage() {
         <div className="text-xs text-yellow-800 space-y-1">
           <p><strong>使用说明：</strong></p>
           <p>• 点击麦克风图标切换到语音模式</p>
-          <p>• 在语音模式下，按住大按钮开始录音</p>
+          <p>• 在语音模式下，<strong>长按</strong>大按钮开始录音（至少200ms）</p>
+          <p>• 短按（少于200ms）会被忽略，提示"请长按进行录音"</p>
           <p>• 向上滑动到红色区域可以取消录音</p>
           <p>• 最长支持60秒语音录制</p>
           <p>• 录音时间少于1秒将被忽略</p>
