@@ -46,16 +46,17 @@ async def chat_with_ai(
         ai_response = None
         bills_created = []
         bill_ids = []  # 收集创建的账单ID
-
-        print(chat_request)
         
         if chat_request.audio:
+            print("处理音频数据...")
             # 处理音频输入
             voice_result = ai_service.recognize_voice(chat_request.audio)
+            print("音频识别返回值 ", voice_result)
             if voice_result.get("success"):
                 # 语音识别成功，分析识别出的文本
                 recognized_text = voice_result["text"]
-                ai_response = ai_service.analyze_text(recognized_text)
+                # ai_response = ai_service.analyze_text(recognized_text)
+                ai_response = ai_service.chat(recognized_text)
                 
                 # 更新用户消息内容为识别出的文本
                 user_msg_db.content = f"[语音识别] {recognized_text}"
@@ -79,7 +80,6 @@ async def chat_with_ai(
             ai_response = ai_service.chat(chat_request.message)
         # 如果AI识别出账单信息，创建账单
         if ai_response.get("bills"):
-
             for bill_data in ai_response["bills"]:
                 try:
                     # 处理日期信息

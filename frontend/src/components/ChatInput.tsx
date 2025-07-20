@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mic, MicOff, Camera, Send, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Camera, Send, Loader2, Keyboard, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ChatInputProps {
@@ -24,6 +24,7 @@ export default function ChatInput({
   placeholder = "输入记账信息..."
 }: ChatInputProps) {
   const [inputValue, setInputValue] = useState('');
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
@@ -32,11 +33,13 @@ export default function ChatInput({
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  const [cancelZoneActive, setCancelZoneActive] = useState(false);
+  const [waveformKey, setWaveformKey] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recordingStartTime = useRef<number>(0);
-  const voiceButtonRef = useRef<HTMLButtonElement>(null);
   const initialTouchPosition = useRef({ x: 0, y: 0 });
+  const waveformTimer = useRef<NodeJS.Timeout | null>(null);
 
   // 发送文本消息
   const handleSendMessage = useCallback(() => {
@@ -69,19 +72,23 @@ export default function ChatInput({
 
       recorder.onstop = async () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        const currentRecordingTime = Math.floor((Date.now() - recordingStartTime.current) / 1000);
 
         // 检查录音时长，太短的录音不处理
-        if (recordingTime < 1) {
-          toast.info('录音时间太短');
+        if (currentRecordingTime < 1) {
+          toast.info('录音时间太短，至少需要1秒');
           return;
         }
 
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const base64Audio = (reader.result as string).split(',')[1];
-          onVoiceInput(base64Audio);
-        };
-        reader.readAsDataURL(audioBlob);
+        // 如果不是取消操作，则处理音频
+        if (!isDragging) {
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const base64Audio = (reader.result as string).split(',')[1];
+            onVoiceInput(base64Audio);
+          };
+          reader.readAsDataURL(audioBlob);
+        }
 
         // 清理资源
         stream.getTracks().forEach(track => track.stop());
@@ -91,18 +98,26 @@ export default function ChatInput({
       setMediaRecorder(recorder);
       setIsRecording(true);
       recordingStartTime.current = Date.now();
+      setRecordingTime(0);
 
-      // 开始计时
+      // 开始计时，每100ms更新一次
       const timer = setInterval(() => {
-        setRecordingTime(Math.floor((Date.now() - recordingStartTime.current) / 1000));
-      }, 100); // 更频繁的更新以获得更流畅的动画
+        const elapsed = Math.floor((Date.now() - recordingStartTime.current) / 1000);
+        setRecordingTime(elapsed);
+      }, 100);
       setRecordingTimer(timer);
+
+      // 启动波形动画
+      const waveTimer = setInterval(() => {
+        setWaveformKey(prev => prev + 1);
+      }, 150);
+      waveformTimer.current = waveTimer;
 
     } catch (error) {
       console.error('无法访问麦克风:', error);
       toast.error('无法访问麦克风，请检查权限设置');
     }
-  }, [disabled, onVoiceInput, recordingTime]);
+  }, [disabled, onVoiceInput, isDragging]);
 
   // 停止录音
   const stopRecording = useCallback(() => {
@@ -110,13 +125,26 @@ export default function ChatInput({
       mediaRecorder.stop();
       setIsRecording(false);
       setRecordingTime(0);
-      
+
       if (recordingTimer) {
         clearInterval(recordingTimer);
         setRecordingTimer(null);
       }
+
+      if (waveformTimer.current) {
+        clearInterval(waveformTimer.current);
+        waveformTimer.current = null;
+      }
     }
   }, [mediaRecorder, isRecording, recordingTimer]);
+
+  // 监听录音时间，60秒自动停止
+  useEffect(() => {
+    if (recordingTime >= 60 && isRecording) {
+      stopRecording();
+      toast.info('录音时间已达到最大限制（60秒）');
+    }
+  }, [recordingTime, isRecording, stopRecording]);
 
   // 取消录音
   const cancelRecording = useCallback(() => {
@@ -126,6 +154,7 @@ export default function ChatInput({
       setIsRecording(false);
       setRecordingTime(0);
       setIsDragging(false);
+      setCancelZoneActive(false);
       setDragPosition({ x: 0, y: 0 });
 
       if (recordingTimer) {
@@ -133,34 +162,50 @@ export default function ChatInput({
         setRecordingTimer(null);
       }
 
+      if (waveformTimer.current) {
+        clearInterval(waveformTimer.current);
+        waveformTimer.current = null;
+      }
+
       toast.info('录音已取消');
     }
   }, [mediaRecorder, isRecording, recordingTimer]);
 
-  // 长按开始
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  // 切换语音模式
+  const toggleVoiceMode = useCallback(() => {
+    setIsVoiceMode(!isVoiceMode);
+  }, [isVoiceMode]);
+
+  // 获取触摸位置
+  const getTouchPosition = (e: React.TouchEvent | React.MouseEvent) => {
+    if ('touches' in e) {
+      return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    return { x: e.clientX, y: e.clientY };
+  };
+
+  // 开始按住（支持鼠标和触摸）
+  const handlePressStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (disabled || isLoading) return;
 
     e.preventDefault();
-    initialTouchPosition.current = { x: e.clientX, y: e.clientY };
+    const position = getTouchPosition(e);
+    initialTouchPosition.current = position;
 
-    const timer = setTimeout(() => {
-      setIsLongPress(true);
-      startRecording();
-    }, 200); // 200ms后开始录音
-
-    setLongPressTimer(timer);
+    // 立即开始录音（微信风格）
+    setIsLongPress(true);
+    startRecording();
   }, [disabled, isLoading, startRecording]);
 
-  // 长按结束
-  const handleMouseUp = useCallback(() => {
+  // 结束按住
+  const handlePressEnd = useCallback(() => {
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
 
     if (isLongPress && isRecording) {
-      if (isDragging) {
+      if (isDragging || cancelZoneActive) {
         cancelRecording();
       } else {
         stopRecording();
@@ -169,24 +214,26 @@ export default function ChatInput({
 
     setIsLongPress(false);
     setIsDragging(false);
+    setCancelZoneActive(false);
     setDragPosition({ x: 0, y: 0 });
-  }, [longPressTimer, isLongPress, isRecording, isDragging, cancelRecording, stopRecording]);
+  }, [longPressTimer, isLongPress, isRecording, isDragging, cancelZoneActive, cancelRecording, stopRecording]);
 
-  // 拖拽处理
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+  // 拖拽处理（支持鼠标和触摸）
+  const handlePressMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!isLongPress || !isRecording) return;
 
-    const deltaX = e.clientX - initialTouchPosition.current.x;
-    const deltaY = e.clientY - initialTouchPosition.current.y;
+    const position = getTouchPosition(e);
+    const deltaX = position.x - initialTouchPosition.current.x;
+    const deltaY = position.y - initialTouchPosition.current.y;
 
     setDragPosition({ x: deltaX, y: deltaY });
 
-    // 如果向上拖拽超过一定距离，标记为取消
-    if (deltaY < -50) {
-      setIsDragging(true);
-    } else {
-      setIsDragging(false);
-    }
+    // 向上拖拽超过80px进入取消区域
+    const cancelThreshold = 80;
+    const shouldCancel = deltaY < -cancelThreshold;
+
+    setIsDragging(shouldCancel);
+    setCancelZoneActive(shouldCancel);
   }, [isLongPress, isRecording]);
 
   // 处理图片上传
@@ -215,15 +262,18 @@ export default function ChatInput({
   // 生成波形动画
   const generateWaveform = () => {
     const bars = [];
-    for (let i = 0; i < 5; i++) {
+    const barCount = 7;
+    for (let i = 0; i < barCount; i++) {
+      // 使用waveformKey和索引创建动态高度
+      const phase = (waveformKey * 0.3) + (i * 0.8);
+      const height = Math.sin(phase) * 8 + 16;
       bars.push(
         <div
           key={i}
-          className="w-1 bg-red-500 animate-pulse"
+          className="w-1 bg-green-500 rounded-full transition-all duration-150 ease-in-out waveform-bar"
           style={{
-            height: `${Math.random() * 16 + 8}px`,
+            height: `${Math.max(6, Math.abs(height))}px`,
             animationDelay: `${i * 0.1}s`,
-            animationDuration: '0.8s'
           }}
         />
       );
@@ -232,107 +282,171 @@ export default function ChatInput({
   };
 
   return (
-    <div className="border-t p-2 sm:p-4 bg-white">
-      {/* 录音状态显示 */}
+    <div className={`border-t bg-white ${isRecording ? 'recording-active' : ''}`}>
+      {/* 取消录音提示区域 */}
       {isRecording && (
-        <div className="mb-2 flex items-center justify-center space-x-3 text-red-500 bg-red-50 rounded-lg p-3 mx-2">
-          <div className="flex space-x-1 items-end">
-            {generateWaveform()}
+        <div className="relative">
+          {/* 取消区域指示器 */}
+          <div className={`absolute top-0 left-0 right-0 h-16 bg-red-500 transition-all duration-200 ${
+            cancelZoneActive ? 'opacity-100 cancel-zone-active' : 'opacity-0'
+          } flex items-center justify-center z-10`}>
+            <div className="flex items-center space-x-2 text-white">
+              <X className="h-5 w-5" />
+              <span className="text-sm font-medium">松开取消</span>
+            </div>
           </div>
-          <span className="text-sm font-medium">{formatRecordingTime(Math.floor(recordingTime / 10))}</span>
-          <div className="flex items-center space-x-2">
-            {isDragging && (
-              <span className="text-xs text-red-600 animate-pulse">松开取消</span>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={cancelRecording}
-              className="text-red-500 hover:text-red-600 h-6 px-2"
-            >
-              取消
-            </Button>
+
+          {/* 录音状态显示 */}
+          <div className="bg-gray-100 p-4 flex flex-col items-center space-y-3">
+            <div className="flex items-center space-x-3">
+              <div className="flex space-x-1 items-end">
+                {generateWaveform()}
+              </div>
+              <span className="text-lg font-mono text-gray-700">
+                {formatRecordingTime(recordingTime)}
+              </span>
+            </div>
+
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                {cancelZoneActive ? '松开取消录音' : '正在录音...'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                最长支持60秒语音 ({60 - recordingTime}秒)
+              </p>
+            </div>
           </div>
         </div>
       )}
-      
-      <div className="flex items-center space-x-1 sm:space-x-2">
-        {/* 图片上传按钮 */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isLoading || disabled}
-          className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3"
-        >
-          <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline ml-1">图片</span>
-        </Button>
-        
-        {/* 语音按钮 */}
-        <Button
-          ref={voiceButtonRef}
-          variant="outline"
-          size="sm"
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseUp}
-          disabled={isLoading || disabled}
-          className={`flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3 select-none transition-all duration-200 ${
-            isRecording
-              ? isDragging
-                ? 'bg-gray-500 text-white hover:bg-gray-600 transform scale-95'
-                : 'bg-red-500 text-white hover:bg-red-600 transform scale-105'
-              : 'hover:bg-blue-50'
-          }`}
-          style={{
-            transform: isRecording ? `translate(${dragPosition.x * 0.1}px, ${dragPosition.y * 0.1}px) ${isDragging ? 'scale(0.95)' : 'scale(1.05)'}` : 'scale(1)'
-          }}
-        >
-          {isRecording ? (
-            isDragging ? (
-              <MicOff className="h-3 w-3 sm:h-4 sm:w-4" />
-            ) : (
-              <div className="relative">
-                <Mic className="h-3 w-3 sm:h-4 sm:w-4" />
-                <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
+
+      <div className="p-2 sm:p-4">
+        {isVoiceMode ? (
+          /* 语音模式界面 */
+          <div className="flex items-center space-x-2">
+            {/* 切换到文本模式按钮 */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleVoiceMode}
+              disabled={isLoading || disabled || isRecording}
+              className="flex-shrink-0 h-10 w-10 p-2"
+            >
+              <Keyboard className="h-4 w-4" />
+            </Button>
+
+            {/* 图片上传按钮 */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || disabled || isRecording}
+              className="flex-shrink-0 h-10 w-10 p-2"
+            >
+              <Camera className="h-4 w-4" />
+            </Button>
+
+            {/* 语音录制按钮 - 占据大部分空间 */}
+            <div
+              className={`flex-1 h-12 rounded-lg border-2 border-dashed transition-all duration-200 select-none voice-input-area ${
+                isRecording
+                  ? cancelZoneActive
+                    ? 'bg-red-500 border-red-600 text-white'
+                    : 'bg-green-500 border-green-600 text-white voice-recording-button'
+                  : 'bg-gray-50 border-gray-300 hover:bg-gray-100 active:bg-gray-200'
+              } voice-recording-button`}
+              onMouseDown={handlePressStart}
+              onMouseUp={handlePressEnd}
+              onMouseMove={handlePressMove}
+              onMouseLeave={handlePressEnd}
+              onTouchStart={handlePressStart}
+              onTouchEnd={handlePressEnd}
+              onTouchMove={handlePressMove}
+              style={{
+                transform: isRecording ? `translateY(${Math.min(dragPosition.y * 0.1, 0)}px)` : 'none'
+              }}
+            >
+              <div className="h-full flex items-center justify-center">
+                {isRecording ? (
+                  <div className="flex items-center space-x-2">
+                    {cancelZoneActive ? (
+                      <>
+                        <MicOff className="h-5 w-5" />
+                        <span className="font-medium">松开取消</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="relative">
+                          <Mic className="h-5 w-5" />
+                          <div className="absolute inset-0 bg-white rounded-full animate-ping opacity-30"></div>
+                        </div>
+                        <span className="font-medium">正在录音...</span>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2 text-gray-600">
+                    <Mic className="h-5 w-5" />
+                    <span className="font-medium">按住 说话</span>
+                  </div>
+                )}
               </div>
-            )
-          ) : (
-            <Mic className="h-3 w-3 sm:h-4 sm:w-4" />
-          )}
-          <span className="hidden sm:inline ml-1">
-            {isRecording ? (isDragging ? '取消' : '录音中') : '按住说话'}
-          </span>
-        </Button>
-        
-        {/* 文本输入 */}
-        <Input
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
-          disabled={isLoading || disabled}
-        />
-        
-        {/* 发送按钮 */}
-        <Button
-          onClick={handleSendMessage}
-          disabled={!inputValue.trim() || isLoading || disabled}
-          size="sm"
-          className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3"
-        >
-          {isLoading ? (
-            <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-          ) : (
-            <Send className="h-3 w-3 sm:h-4 sm:w-4" />
-          )}
-          <span className="hidden sm:inline ml-1">发送</span>
-        </Button>
+            </div>
+          </div>
+        ) : (
+          /* 文本模式界面 */
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            {/* 语音模式切换按钮 */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleVoiceMode}
+              disabled={isLoading || disabled}
+              className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3"
+            >
+              <Mic className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline ml-1">语音</span>
+            </Button>
+
+            {/* 图片上传按钮 */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || disabled}
+              className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3"
+            >
+              <Camera className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline ml-1">图片</span>
+            </Button>
+
+            {/* 文本输入 */}
+            <Input
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
+              disabled={isLoading || disabled}
+            />
+
+            {/* 发送按钮 */}
+            <Button
+              onClick={handleSendMessage}
+              disabled={!inputValue.trim() || isLoading || disabled}
+              size="sm"
+              className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3"
+            >
+              {isLoading ? (
+                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+              ) : (
+                <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+              )}
+              <span className="hidden sm:inline ml-1">发送</span>
+            </Button>
+          </div>
+        )}
       </div>
-      
+
       {/* 隐藏的文件输入 */}
       <input
         ref={fileInputRef}

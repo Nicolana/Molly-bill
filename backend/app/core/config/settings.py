@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     # AI服务配置
     dashscope_api_key: Optional[str] = Field(default=None, env="DASHSCOPE_API_KEY")
     openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
+
+    # 阿里云NLS语音识别配置
+    aliyun_nls_app_key: Optional[str] = Field(default=None, env="ALIYUN_NLS_APP_KEY")
+    aliyun_nls_token: Optional[str] = Field(default=None, env="ALIYUN_NLS_TOKEN")
+    aliyun_nls_host: str = Field(default="nls-gateway-cn-shanghai.aliyuncs.com", env="ALIYUN_NLS_HOST")
     
     model_config = SettingsConfigDict(
         env_file=".env", 

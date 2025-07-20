@@ -151,3 +151,70 @@
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
+
+/* 语音输入优化样式 */
+@keyframes voice-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes waveform-bounce {
+  0%, 100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.5);
+  }
+}
+
+.voice-recording-button {
+  animation: voice-pulse 2s ease-in-out infinite;
+}
+
+.waveform-bar {
+  animation: waveform-bounce 0.8s ease-in-out infinite;
+}
+
+/* 移动端触摸优化 */
+@media (max-width: 768px) {
+  .voice-input-area {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .voice-recording-button {
+    min-height: 48px; /* 确保触摸目标足够大 */
+  }
+}
+
+/* 防止在录音时意外选择文本 */
+.recording-active {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* 取消区域动画 */
+@keyframes cancel-zone-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cancel-zone-active {
+  animation: cancel-zone-appear 0.2s ease-out;
+}

@@ -5,11 +5,10 @@ from typing import Optional, List, Dict, Any
 from PIL import Image
 import dashscope
 from dashscope import MultiModalConversation
-from dashscope.audio.asr import Recognition
-from pydub import AudioSegment
 import json
 from datetime import datetime, date, timedelta
 from app.core.config.settings import settings
+from .aliyun_nls_service import aliyun_nls_service
 
 # 设置阿里百练API密钥
 dashscope.api_key = settings.dashscope_api_key or "your-dashscope-api-key"
@@ -277,44 +276,17 @@ class AIService:
             }
     
     def recognize_voice(self, audio_data: str) -> Dict[str, Any]:
-        """语音识别"""
+        """语音识别 - 使用阿里云NLS服务"""
         try:
-            # 解码base64音频数据
-            audio_bytes = base64.b64decode(audio_data)
-            
-            # 保存临时音频文件
-            temp_file = "temp_audio.wav"
-            with open(temp_file, "wb") as f:
-                f.write(audio_bytes)
-            
-            # 使用阿里百练语音识别
-            response = Recognition.call(
-                model='paraformer-realtime-v1',
-                audio=temp_file
-            )
-            
-            # 删除临时文件
-            os.remove(temp_file)
-            
-            if response.status_code == 200:
-                text = response.output.text
-                return {
-                    "success": True,
-                    "text": text,
-                    "confidence": 0.9  # 默认置信度
-                }
-            else:
-                return {
-                    "success": False,
-                    "text": "",
-                    "message": "语音识别失败"
-                }
+            # 使用阿里云NLS服务进行语音识别
+            result = aliyun_nls_service.recognize_voice(audio_data)
+            return result
         except Exception as e:
             print(f"语音识别错误: {e}")
             return {
                 "success": False,
                 "text": "",
-                "message": "语音识别服务暂时不可用"
+                "message": f"语音识别服务异常: {str(e)}"
             }
     
     def chat(self, message: str) -> Dict[str, Any]:
