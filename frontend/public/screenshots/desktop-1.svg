@@ -1,0 +1,71 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="1280" height="720" fill="#f8fafc"/>
+  
+  <!-- 顶部导航栏 -->
+  <rect width="1280" height="64" fill="#ffffff"/>
+  <rect x="0" y="64" width="1280" height="1" fill="#e2e8f0"/>
+  
+  <!-- Logo 和标题 -->
+  <circle cx="48" cy="32" r="16" fill="#3b82f6"/>
+  <text x="80" y="40" fill="#1e293b" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Molly Bill - 智能记账助手</text>
+  
+  <!-- 侧边栏 -->
+  <rect x="0" y="64" width="240" height="656" fill="#ffffff"/>
+  <rect x="240" y="64" width="1" height="656" fill="#e2e8f0"/>
+  
+  <!-- 侧边栏菜单项 -->
+  <rect x="16" y="96" width="208" height="40" rx="8" fill="#3b82f6" opacity="0.1"/>
+  <text x="32" y="120" fill="#3b82f6" font-family="Arial, sans-serif" font-size="14" font-weight="medium">📊 仪表盘</text>
+  
+  <text x="32" y="168" fill="#64748b" font-family="Arial, sans-serif" font-size="14">💰 账本</text>
+  <text x="32" y="208" fill="#64748b" font-family="Arial, sans-serif" font-size="14">📈 预算</text>
+  <text x="32" y="248" fill="#64748b" font-family="Arial, sans-serif" font-size="14">💬 AI助手</text>
+  
+  <!-- 主内容区域 -->
+  <rect x="256" y="80" width="1008" height="624" fill="#ffffff"/>
+  
+  <!-- 统计卡片 -->
+  <rect x="288" y="112" width="240" height="120" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="304" y="136" fill="#64748b" font-family="Arial, sans-serif" font-size="12">本月支出</text>
+  <text x="304" y="164" fill="#dc2626" font-family="Arial, sans-serif" font-size="24" font-weight="bold">¥3,245</text>
+  <text x="304" y="188" fill="#16a34a" font-family="Arial, sans-serif" font-size="12">↓ 12% 较上月</text>
+  
+  <rect x="544" y="112" width="240" height="120" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="560" y="136" fill="#64748b" font-family="Arial, sans-serif" font-size="12">本月收入</text>
+  <text x="560" y="164" fill="#16a34a" font-family="Arial, sans-serif" font-size="24" font-weight="bold">¥8,500</text>
+  <text x="560" y="188" fill="#16a34a" font-family="Arial, sans-serif" font-size="12">↑ 5% 较上月</text>
+  
+  <rect x="800" y="112" width="240" height="120" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="816" y="136" fill="#64748b" font-family="Arial, sans-serif" font-size="12">余额</text>
+  <text x="816" y="164" fill="#3b82f6" font-family="Arial, sans-serif" font-size="24" font-weight="bold">¥15,680</text>
+  <text x="816" y="188" fill="#64748b" font-family="Arial, sans-serif" font-size="12">总资产</text>
+  
+  <!-- 图表区域 -->
+  <rect x="288" y="264" width="496" height="280" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="304" y="288" fill="#1e293b" font-family="Arial, sans-serif" font-size="16" font-weight="medium">支出趋势</text>
+  
+  <!-- 简单的折线图 -->
+  <polyline points="320,480 360,440 400,460 440,420 480,400 520,380 560,360 600,340 640,320 680,300 720,280" 
+            fill="none" stroke="#3b82f6" stroke-width="3"/>
+  
+  <!-- 最近交易 -->
+  <rect x="800" y="264" width="448" height="280" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="816" y="288" fill="#1e293b" font-family="Arial, sans-serif" font-size="16" font-weight="medium">最近交易</text>
+  
+  <!-- 交易列表 -->
+  <rect x="816" y="304" width="416" height="48" fill="#f8fafc"/>
+  <text x="832" y="324" fill="#1e293b" font-family="Arial, sans-serif" font-size="14">午餐 - 麦当劳</text>
+  <text x="832" y="340" fill="#64748b" font-family="Arial, sans-serif" font-size="12">今天 12:30</text>
+  <text x="1200" y="332" fill="#dc2626" font-family="Arial, sans-serif" font-size="14" text-anchor="end">-¥35</text>
+  
+  <rect x="816" y="360" width="416" height="48" fill="#ffffff"/>
+  <text x="832" y="380" fill="#1e293b" font-family="Arial, sans-serif" font-size="14">工资收入</text>
+  <text x="832" y="396" fill="#64748b" font-family="Arial, sans-serif" font-size="12">昨天 09:00</text>
+  <text x="1200" y="388" fill="#16a34a" font-family="Arial, sans-serif" font-size="14" text-anchor="end">+¥8,500</text>
+  
+  <rect x="816" y="416" width="416" height="48" fill="#f8fafc"/>
+  <text x="832" y="436" fill="#1e293b" font-family="Arial, sans-serif" font-size="14">超市购物</text>
+  <text x="832" y="452" fill="#64748b" font-family="Arial, sans-serif" font-size="12">2天前 18:45</text>
+  <text x="1200" y="444" fill="#dc2626" font-family="Arial, sans-serif" font-size="14" text-anchor="end">-¥156</text>
+</svg>

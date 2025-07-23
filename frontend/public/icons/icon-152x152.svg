@@ -1,0 +1,11 @@
+
+<svg width="152" height="152" viewBox="0 0 152 152" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="152" height="152" rx="15.200000000000001" fill="#3b82f6"/>
+  <circle cx="76" cy="60.800000000000004" r="22.8" fill="#ffffff" stroke="#3b82f6" stroke-width="1.216"/>
+  <text x="76" y="63.839999999999996" text-anchor="middle" fill="#3b82f6" font-family="Arial, sans-serif" font-size="13.68" font-weight="bold">¥</text>
+  <rect x="53.199999999999996" y="91.2" width="45.6" height="38" rx="2.28" fill="#ffffff"/>
+  <rect x="53.199999999999996" y="91.2" width="45.6" height="9.12" rx="2.28" fill="#1e40af"/>
+  <line x1="59.28" y1="106.39999999999999" x2="92.72" y2="106.39999999999999" stroke="#3b82f6" stroke-width="0.912"/>
+  <line x1="59.28" y1="112.48" x2="83.60000000000001" y2="112.48" stroke="#3b82f6" stroke-width="0.912"/>
+  <line x1="59.28" y1="118.56" x2="92.72" y2="118.56" stroke="#3b82f6" stroke-width="0.912"/>
+</svg>
